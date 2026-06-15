@@ -1,36 +1,20 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { RouterProvider } from "react-router";
 import { Toaster } from "sonner";
 import { router } from "./routes";
 import SplashScreen from "./components/SplashScreen";
+import Auth from "./screens/Auth";
+import { AuthProvider, useAuth } from "./store/AuthContext";
 import { StoreProvider } from "./store/AppStore";
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true);
-  const [fading, setFading] = useState(false);
-
-  useEffect(() => {
-    // Plain timers (not an rAF/AnimatePresence transition) so the splash
-    // always clears, even if the tab loads in the background.
-    const fade = setTimeout(() => setFading(true), 2500);
-    const done = setTimeout(() => setShowSplash(false), 3000);
-    return () => {
-      clearTimeout(fade);
-      clearTimeout(done);
-    };
-  }, []);
-
   return (
-    <StoreProvider>
+    <AuthProvider>
       {/* On phones the app fills the screen like an installed app; from `sm`
           up it sits inside the centered device frame for desktop preview. */}
       <div className="min-h-[100dvh] bg-[#E8DDD0] sm:flex sm:items-center sm:justify-center sm:py-4 sm:px-4">
         <div className="relative w-full h-[100dvh] bg-white overflow-hidden sm:h-[calc(100dvh-2rem)] sm:max-w-[390px] sm:max-h-[844px] sm:mx-auto sm:rounded-[40px] sm:shadow-2xl">
-          {/* The app mounts immediately; the splash fades out on top of it.
-              This keeps the splash from gating the whole app behind a
-              requestAnimationFrame transition (which a background tab pauses). */}
-          <RouterProvider router={router} />
-          {showSplash && <SplashScreen fading={fading} />}
+          <Shell />
         </div>
       </div>
       <Toaster
@@ -45,6 +29,42 @@ export default function App() {
           },
         }}
       />
-    </StoreProvider>
+    </AuthProvider>
+  );
+}
+
+function Shell() {
+  const { loading, session } = useAuth();
+
+  // Splash: minimum brand moment, but also held until auth resolves.
+  const [minTimePassed, setMinTimePassed] = useState(false);
+  const [renderSplash, setRenderSplash] = useState(true);
+  const [fading, setFading] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMinTimePassed(true), 2200);
+    return () => clearTimeout(t);
+  }, []);
+
+  const wantSplash = loading || !minTimePassed;
+  useEffect(() => {
+    if (!wantSplash) {
+      setFading(true);
+      const t = setTimeout(() => setRenderSplash(false), 450);
+      return () => clearTimeout(t);
+    }
+  }, [wantSplash]);
+
+  return (
+    <>
+      {session ? (
+        <StoreProvider>
+          <RouterProvider router={router} />
+        </StoreProvider>
+      ) : (
+        !wantSplash && <Auth />
+      )}
+      {renderSplash && <SplashScreen fading={fading} />}
+    </>
   );
 }

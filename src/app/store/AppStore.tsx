@@ -4,408 +4,305 @@ import {
   useEffect,
   useMemo,
   useState,
+  useCallback,
   type ReactNode,
 } from "react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
-import { items, type Item } from "../data/items";
+import { supabase } from "../lib/supabase";
+import type { Conversation, Listing } from "../lib/types";
+import { useAuth } from "./AuthContext";
 
 /**
- * Central client-side store for the Rewear demo.
- *
- * Holds the things that have to stay in sync as the user moves between
- * screens: the swap-credit balance, saved items, the user's own listings,
- * and the swap conversations that drive the inbox + eco stats.
- *
- * State is persisted to localStorage, so it survives reloads and syncs
- * across tabs/windows on the same device (via the `storage` event).
- * NOTE: this is per-device only — sharing listings across different
- * devices/users would require a backend.
+ * Supabase-backed data layer: the shared marketplace (listings), the user's
+ * saved items and swap threads, plus the credit/eco mechanics. Credits live
+ * on the user's profile row; messaging is handled live in the inbox screen.
  */
 
-// ── Credit economy ────────────────────────────────────────────────────────
 export const CREDIT_RULES = {
-  START: 12,
-  LIST_ITEM: 2, // earn: listing an item
-  COMPLETE_SWAP: 5, // earn: completing a swap
-  FIVE_STAR: 1, // earn: leaving a 5-star rating
-  REQUEST_SWAP: 3, // spend: requesting a swap
-  BOOST: 4, // spend: boosting a listing
+  LIST_ITEM: 2,
+  COMPLETE_SWAP: 5,
+  FIVE_STAR: 1,
+  REQUEST_SWAP: 3,
+  BOOST: 4,
 } as const;
 
-// Eco-impact multipliers (per completed swap)
-export const ECO = {
-  CO2_PER_SWAP: 2.5, // kg CO₂ saved
-  KM_PER_SWAP: 3, // km of shipping avoided
-} as const;
+export const ECO = { CO2_PER_SWAP: 2.5, KM_PER_SWAP: 3 } as const;
 
-// A handful of swaps already under the user's belt, so the eco stats and
-// history don't start empty. Live completions are added on top of this.
-const BASE_COMPLETED_SWAPS = 8;
+const LISTING_SELECT = "*, owner:owner_id(id,name,avatar_url,location)";
+const CONVO_SELECT =
+  "*, listing:listing_id(id,name,image_url), requester:requester_id(id,name,avatar_url), owner:owner_id(id,name,avatar_url)";
 
-const STORAGE_KEY = "rewear-state-v2";
-
-// ── Types ─────────────────────────────────────────────────────────────────
-export type SwapStatus = "pending" | "confirmed" | "completed";
-
-export interface Listing extends Item {
-  status: "active" | "swapped";
-  boosted: boolean;
-  userCreated?: boolean; // true for items the user listed themselves
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [head, b64] = dataUrl.split(",");
+  const mime = head.match(/:(.*?);/)?.[1] || "image/jpeg";
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
 }
 
-export interface Conversation {
-  id: number;
-  name: string;
-  avatar: string;
-  itemId: number;
-  itemThumb: string;
-  lastMessage: string;
-  time: string;
-  unread: boolean;
-  status: SwapStatus;
-  rated: boolean;
-  hasActiveMeetup?: boolean;
-}
-
-export interface CreditEntry {
-  id: number;
-  label: string;
-  amount: number; // signed
-}
-
-// ── Seed state ────────────────────────────────────────────────────────────
-const seedListings: Listing[] = [
-  { ...items[0], status: "active", boosted: false },
-  { ...items[1], status: "active", boosted: false },
-  { ...items[2], status: "swapped", boosted: false },
-  { ...items[3], status: "active", boosted: false },
-];
-
-const seedConversations: Conversation[] = [
-  {
-    id: 1,
-    name: "Emma Wilson",
-    avatar: "https://i.pravatar.cc/150?img=5",
-    itemId: 2,
-    itemThumb: items[1].image,
-    lastMessage: "That works for me! See you then",
-    time: "2h ago",
-    unread: false,
-    status: "confirmed",
-    rated: false,
-    hasActiveMeetup: true,
-  },
-  {
-    id: 2,
-    name: "Alex Chen",
-    avatar: "https://i.pravatar.cc/150?img=8",
-    itemId: 3,
-    itemThumb: items[2].image,
-    lastMessage: "Would you be interested in swapping?",
-    time: "5h ago",
-    unread: true,
-    status: "pending",
-    rated: false,
-  },
-  {
-    id: 3,
-    name: "Maria Garcia",
-    avatar: "https://i.pravatar.cc/150?img=9",
-    itemId: 4,
-    itemThumb: items[3].image,
-    lastMessage: "Thanks for the quick swap!",
-    time: "1d ago",
-    unread: false,
-    status: "completed",
-    rated: false,
-  },
-];
-
-const seedSavedIds = [3, 6];
-
-interface PersistedState {
-  credits: number;
-  ledger: CreditEntry[];
-  savedIds: number[];
-  listings: Listing[];
-  conversations: Conversation[];
-}
-
-function loadPersisted(): PersistedState | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw);
-    if (typeof p?.credits !== "number" || !Array.isArray(p?.listings)) return null;
-    return p as PersistedState;
-  } catch {
-    return null;
-  }
-}
-
-// ── Store shape ───────────────────────────────────────────────────────────
 export interface ListInput {
   name: string;
   category: string;
   condition: string;
   size: string;
-  image?: string;
-  neighborhood?: string;
+  neighborhood: string;
   description?: string;
+  imageDataUrl?: string;
 }
 
 interface StoreValue {
+  loading: boolean;
   credits: number;
-  ledger: CreditEntry[];
-  savedIds: number[];
   listings: Listing[];
+  myListings: Listing[];
+  savedIds: string[];
   conversations: Conversation[];
-
-  // derived
-  feedItems: Item[]; // user listings + the public catalogue, for the browse feed
-  completedSwaps: number;
   ecoStats: { itemsSwapped: number; co2Saved: number; kmAvoided: number };
 
-  // lookups
-  getItem: (id: number) => Item | undefined;
+  getListing: (id: string) => Listing | undefined;
+  reload: () => Promise<void>;
 
-  // saved
-  isSaved: (itemId: number) => boolean;
-  toggleSaved: (itemId: number) => void;
+  isSaved: (id: string) => boolean;
+  toggleSaved: (id: string) => Promise<void>;
 
-  // swaps
-  hasRequested: (itemId: number) => boolean;
-  requestSwap: (item: Item) => boolean;
-  completeSwap: (conversationId: number) => void;
-  rateSwap: (conversationId: number) => void;
+  hasRequested: (listingId: string) => boolean;
+  requestSwap: (listing: Listing) => Promise<void>;
+  completeSwap: (conversationId: string) => Promise<void>;
+  rateSwap: (conversationId: string) => Promise<void>;
 
-  // listings
-  listItem: (input: ListInput) => void;
-  boostListing: (listingId: number) => void;
-
-  // demo
-  resetDemo: () => void;
+  listItem: (input: ListInput) => Promise<boolean>;
+  boostListing: (listingId: string) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
 
-// Unique, monotonically increasing ids that don't collide across reloads/tabs.
-let idSeq = 0;
-const genId = () => Date.now() * 1000 + (idSeq++ % 1000);
-
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const initial = loadPersisted();
-  const [credits, setCredits] = useState(initial?.credits ?? CREDIT_RULES.START);
-  const [ledger, setLedger] = useState<CreditEntry[]>(initial?.ledger ?? []);
-  const [savedIds, setSavedIds] = useState<number[]>(initial?.savedIds ?? seedSavedIds);
-  const [listings, setListings] = useState<Listing[]>(initial?.listings ?? seedListings);
-  const [conversations, setConversations] = useState<Conversation[]>(
-    initial?.conversations ?? seedConversations,
-  );
+  const { session, profile, patchProfile } = useAuth();
+  const userId = session?.user.id ?? "";
 
-  // Persist on any change.
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ credits, ledger, savedIds, listings, conversations }),
-      );
-    } catch {
-      /* quota or privacy mode — ignore, app still works in-memory */
-    }
-  }, [credits, ledger, savedIds, listings, conversations]);
+  const [loading, setLoading] = useState(true);
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
-  // Sync state when another tab/window on the same device changes it.
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key !== STORAGE_KEY || !e.newValue) return;
-      try {
-        const p = JSON.parse(e.newValue) as PersistedState;
-        setCredits(p.credits);
-        setLedger(p.ledger);
-        setSavedIds(p.savedIds);
-        setListings(p.listings);
-        setConversations(p.conversations);
-      } catch {
-        /* ignore malformed payloads */
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+  const credits = profile?.credits ?? 0;
+
+  // ── data loading ──────────────────────────────────────────────────────
+  const loadListings = useCallback(async () => {
+    const { data } = await supabase
+      .from("listings")
+      .select(LISTING_SELECT)
+      .order("created_at", { ascending: false });
+    setListings((data as Listing[]) ?? []);
   }, []);
 
-  // ── credit helpers ──────────────────────────────────────────────────────
-  const earn = (amount: number, label: string) => {
-    setCredits((c) => c + amount);
-    setLedger((l) => [{ id: genId(), label, amount }, ...l]);
-    toast.success(`+${amount} credits`, { description: label });
+  const loadConversations = useCallback(async () => {
+    if (!userId) return;
+    const { data } = await supabase
+      .from("conversations")
+      .select(CONVO_SELECT)
+      .or(`requester_id.eq.${userId},owner_id.eq.${userId}`)
+      .order("created_at", { ascending: false });
+    setConversations((data as Conversation[]) ?? []);
+  }, [userId]);
+
+  const loadSaved = useCallback(async () => {
+    if (!userId) return;
+    const { data } = await supabase.from("saved").select("listing_id").eq("user_id", userId);
+    setSavedIds((data ?? []).map((r: { listing_id: string }) => r.listing_id));
+  }, [userId]);
+
+  const reload = useCallback(async () => {
+    await Promise.all([loadListings(), loadConversations(), loadSaved()]);
+  }, [loadListings, loadConversations, loadSaved]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoading(true);
+      await reload();
+      if (active) setLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [reload]);
+
+  // Keep the inbox live: refresh when my conversations change.
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel("conversations-feed")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "conversations" },
+        () => loadConversations(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, loadConversations]);
+
+  // ── credit helper ─────────────────────────────────────────────────────
+  const changeCredits = async (delta: number, label: string): Promise<boolean> => {
+    const current = profile?.credits ?? 0;
+    if (delta < 0 && current + delta < 0) {
+      toast.error("Not enough credits", { description: `You need ${-delta} credits.` });
+      return false;
+    }
+    const next = current + delta;
+    const { error } = await supabase.from("profiles").update({ credits: next }).eq("id", userId);
+    if (error) {
+      toast.error("Couldn't update credits");
+      return false;
+    }
+    patchProfile({ credits: next });
+    if (delta >= 0) toast.success(`+${delta} credits`, { description: label });
+    else toast(`−${-delta} credits`, { description: label });
+    return true;
   };
 
-  /** Returns false (and warns) when the user can't afford the spend. */
-  const spend = (amount: number, label: string): boolean => {
-    let ok = false;
-    setCredits((c) => {
-      if (c < amount) return c;
-      ok = true;
-      return c - amount;
+  // ── lookups ───────────────────────────────────────────────────────────
+  const getListing = (id: string) => listings.find((l) => l.id === id);
+
+  const myListings = useMemo(
+    () => listings.filter((l) => l.owner_id === userId),
+    [listings, userId],
+  );
+
+  // ── saved ─────────────────────────────────────────────────────────────
+  const isSaved = (id: string) => savedIds.includes(id);
+
+  const toggleSaved = async (id: string) => {
+    if (savedIds.includes(id)) {
+      setSavedIds((s) => s.filter((x) => x !== id));
+      await supabase.from("saved").delete().eq("user_id", userId).eq("listing_id", id);
+    } else {
+      setSavedIds((s) => [...s, id]);
+      await supabase.from("saved").insert({ user_id: userId, listing_id: id });
+    }
+  };
+
+  // ── swaps ─────────────────────────────────────────────────────────────
+  const hasRequested = (listingId: string) =>
+    conversations.some((c) => c.listing_id === listingId && c.requester_id === userId);
+
+  const requestSwap = async (listing: Listing) => {
+    if (listing.owner_id === userId) {
+      toast("That's your own listing", { description: "You can't swap with yourself." });
+      return;
+    }
+    if (hasRequested(listing.id)) {
+      toast("Swap already requested", { description: listing.name });
+      return;
+    }
+    if (!(await changeCredits(-CREDIT_RULES.REQUEST_SWAP, `Requested swap · ${listing.name}`))) {
+      return;
+    }
+    const { data, error } = await supabase
+      .from("conversations")
+      .insert({ listing_id: listing.id, requester_id: userId, owner_id: listing.owner_id })
+      .select("id")
+      .single();
+    if (error) {
+      toast.error("Couldn't start the swap");
+      await changeCredits(CREDIT_RULES.REQUEST_SWAP, "Refund"); // give it back
+      return;
+    }
+    await supabase.from("messages").insert({
+      conversation_id: data.id,
+      sender_id: userId,
+      body: `Hi! I'd love to swap for your ${listing.name}. 👋`,
     });
-    if (!ok) {
-      toast.error("Not enough credits", {
-        description: `You need ${amount} credits for this.`,
-      });
-      return false;
-    }
-    setLedger((l) => [{ id: genId(), label, amount: -amount }, ...l]);
-    toast(`−${amount} credits`, { description: label });
-    return true;
+    await loadConversations();
   };
 
-  // ── lookups ───────────────────────────────────────────────────────────────
-  const getItem = (id: number): Item | undefined =>
-    listings.find((l) => l.id === id) ?? items.find((i) => i.id === id);
-
-  // ── saved ────────────────────────────────────────────────────────────────
-  const isSaved = (itemId: number) => savedIds.includes(itemId);
-  const toggleSaved = (itemId: number) =>
-    setSavedIds((ids) =>
-      ids.includes(itemId) ? ids.filter((i) => i !== itemId) : [...ids, itemId],
-    );
-
-  // ── swaps ────────────────────────────────────────────────────────────────
-  const hasRequested = (itemId: number) =>
-    conversations.some((c) => c.itemId === itemId && c.status !== "completed");
-
-  const requestSwap = (item: Item): boolean => {
-    if (hasRequested(item.id)) {
-      toast("Swap already requested", { description: item.name });
-      return false;
+  const completeSwap = async (conversationId: string) => {
+    const convo = conversations.find((c) => c.id === conversationId);
+    if (!convo || convo.status === "completed") return;
+    const { error } = await supabase
+      .from("conversations")
+      .update({ status: "completed" })
+      .eq("id", conversationId);
+    if (error) {
+      toast.error("Couldn't complete the swap");
+      return;
     }
-    if (!spend(CREDIT_RULES.REQUEST_SWAP, `Requested swap · ${item.name}`)) {
-      return false;
-    }
-    setConversations((cs) => [
-      {
-        id: genId(),
-        name: item.owner.name,
-        avatar: item.owner.avatar,
-        itemId: item.id,
-        itemThumb: item.image,
-        lastMessage: "You requested a swap — say hi! 👋",
-        time: "Just now",
-        unread: false,
-        status: "pending",
-        rated: false,
-      },
-      ...cs,
-    ]);
-    return true;
-  };
-
-  const completeSwap = (conversationId: number) => {
-    let already = false;
-    setConversations((cs) =>
-      cs.map((c) => {
-        if (c.id !== conversationId) return c;
-        if (c.status === "completed") {
-          already = true;
-          return c;
-        }
-        return {
-          ...c,
-          status: "completed",
-          unread: false,
-          lastMessage: "Swap completed 🎉",
-        };
-      }),
-    );
-    if (already) return;
-    earn(CREDIT_RULES.COMPLETE_SWAP, "Completed a swap");
+    await changeCredits(CREDIT_RULES.COMPLETE_SWAP, "Completed a swap");
     confetti({
       particleCount: 80,
       spread: 70,
       origin: { y: 0.6 },
       colors: ["#C2794A", "#6B7A5C", "#E8DDD0"],
     });
+    await loadConversations();
   };
 
-  const rateSwap = (conversationId: number) => {
-    let ok = false;
-    setConversations((cs) =>
-      cs.map((c) => {
-        if (c.id !== conversationId || c.rated || c.status !== "completed") return c;
-        ok = true;
-        return { ...c, rated: true };
-      }),
-    );
-    if (ok) earn(CREDIT_RULES.FIVE_STAR, "5-star rating given");
+  const rateSwap = async (conversationId: string) => {
+    const convo = conversations.find((c) => c.id === conversationId);
+    if (!convo || convo.rated || convo.status !== "completed") return;
+    const { error } = await supabase
+      .from("conversations")
+      .update({ rated: true })
+      .eq("id", conversationId);
+    if (error) return;
+    await changeCredits(CREDIT_RULES.FIVE_STAR, "5-star rating given");
+    await loadConversations();
   };
 
-  // ── listings ──────────────────────────────────────────────────────────────
-  const listItem = (input: ListInput) => {
-    const newListing: Listing = {
-      id: genId(),
+  // ── listings ──────────────────────────────────────────────────────────
+  const listItem = async (input: ListInput): Promise<boolean> => {
+    let imageUrl: string | null = null;
+    if (input.imageDataUrl) {
+      try {
+        const blob = dataUrlToBlob(input.imageDataUrl);
+        const path = `${userId}/${crypto.randomUUID()}.jpg`;
+        const { error: upErr } = await supabase.storage
+          .from("listing-photos")
+          .upload(path, blob, { contentType: "image/jpeg", upsert: false });
+        if (upErr) throw upErr;
+        imageUrl = supabase.storage.from("listing-photos").getPublicUrl(path).data.publicUrl;
+      } catch {
+        toast.error("Photo upload failed", { description: "Listing saved without it." });
+      }
+    }
+
+    const { error } = await supabase.from("listings").insert({
+      owner_id: userId,
       name: input.name,
       category: input.category,
       condition: input.condition,
       size: input.size,
-      image:
-        input.image ||
-        "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800",
-      distance: "0.2km",
-      neighborhood: input.neighborhood || "Ruzafa",
-      description: input.description || "Freshly listed by you.",
-      owner: {
-        name: "Brandon Parker",
-        avatar: "https://i.pravatar.cc/150?img=12",
-        rating: 4.9,
-        swapCount: BASE_COMPLETED_SWAPS,
-      },
-      status: "active",
-      boosted: false,
-      userCreated: true,
-    };
-    setListings((l) => [newListing, ...l]);
-    earn(CREDIT_RULES.LIST_ITEM, `Listed “${input.name}”`);
+      neighborhood: input.neighborhood,
+      description: input.description ?? null,
+      image_url: imageUrl,
+    });
+    if (error) {
+      toast.error("Couldn't create the listing");
+      return false;
+    }
+    await changeCredits(CREDIT_RULES.LIST_ITEM, `Listed “${input.name}”`);
+    await loadListings();
+    return true;
   };
 
-  const boostListing = (listingId: number) => {
+  const boostListing = async (listingId: string) => {
     const target = listings.find((l) => l.id === listingId);
     if (target?.boosted) {
       toast("Already boosted", { description: target.name });
       return;
     }
-    if (!spend(CREDIT_RULES.BOOST, "Boosted a listing")) return;
-    setListings((l) =>
-      l.map((x) => (x.id === listingId ? { ...x, boosted: true } : x)),
-    );
+    if (!(await changeCredits(-CREDIT_RULES.BOOST, "Boosted a listing"))) return;
+    await supabase.from("listings").update({ boosted: true }).eq("id", listingId);
+    await loadListings();
   };
 
-  const resetDemo = () => {
-    try {
-      window.localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
-    setCredits(CREDIT_RULES.START);
-    setLedger([]);
-    setSavedIds(seedSavedIds);
-    setListings(seedListings);
-    setConversations(seedConversations);
-    toast("Demo reset", { description: "Back to a fresh start." });
-  };
-
-  // ── derived ───────────────────────────────────────────────────────────────
-  const feedItems = useMemo<Item[]>(
-    () => [...listings.filter((l) => l.userCreated && l.status === "active"), ...items],
-    [listings],
-  );
-
+  // ── derived ───────────────────────────────────────────────────────────
   const completedSwaps = useMemo(
-    () =>
-      BASE_COMPLETED_SWAPS +
-      conversations.filter((c) => c.status === "completed").length,
+    () => conversations.filter((c) => c.status === "completed").length,
     [conversations],
   );
 
@@ -419,15 +316,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const value: StoreValue = {
+    loading,
     credits,
-    ledger,
-    savedIds,
     listings,
+    myListings,
+    savedIds,
     conversations,
-    feedItems,
-    completedSwaps,
     ecoStats,
-    getItem,
+    getListing,
+    reload,
     isSaved,
     toggleSaved,
     hasRequested,
@@ -436,7 +333,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     rateSwap,
     listItem,
     boostListing,
-    resetDemo,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

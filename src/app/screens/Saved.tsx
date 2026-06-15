@@ -2,14 +2,15 @@ import { Link } from "react-router";
 import { Heart } from "lucide-react";
 import BottomNav from "../components/BottomNav";
 import SmartImage from "../components/SmartImage";
-import type { Item } from "../data/items";
+import type { Listing } from "../lib/types";
 import { useStore } from "../store/AppStore";
+import { listingImage, avatarFor } from "../lib/images";
 
 export default function Saved() {
-  const { savedIds, toggleSaved, getItem } = useStore();
+  const { savedIds, getListing, toggleSaved } = useStore();
   const savedItems = savedIds
-    .map((id) => getItem(id))
-    .filter((item): item is Item => Boolean(item));
+    .map((id) => getListing(id))
+    .filter((item): item is Listing => Boolean(item));
 
   return (
     <div className="h-full flex flex-col bg-[#F5F0E8] relative overflow-hidden">
@@ -42,23 +43,21 @@ export default function Saved() {
         ) : (
           <div className="grid grid-cols-2 gap-3 pt-4">
             {savedItems.map((item) => (
-              <Link
-                key={item.id}
-                to={`/item/${item.id}`}
-                className="group"
-              >
+              <Link key={item.id} to={`/item/${item.id}`} className="group">
                 <div className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   <div className="aspect-[3/4] relative overflow-hidden">
                     <SmartImage
-                      src={item.image}
-                      alt={item.category}
+                      src={listingImage(item.image_url)}
+                      alt={item.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute top-3 left-3">
-                      <span className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-[#3D3530]">
-                        {item.category}
-                      </span>
-                    </div>
+                    {item.category && (
+                      <div className="absolute top-3 left-3">
+                        <span className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-[#3D3530]">
+                          {item.category}
+                        </span>
+                      </div>
+                    )}
                     <div className="absolute top-3 right-3">
                       <button
                         onClick={(e) => {
@@ -71,25 +70,25 @@ export default function Saved() {
                         <Heart className="w-4 h-4 text-[#C2794A] fill-[#C2794A]" strokeWidth={1.5} />
                       </button>
                     </div>
-                    <div className="absolute bottom-3 left-3">
-                      <span className="bg-[#6B7A5C]/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-medium text-white">
-                        {item.neighborhood}
-                      </span>
-                    </div>
+                    {item.neighborhood && (
+                      <div className="absolute bottom-3 left-3">
+                        <span className="bg-[#6B7A5C]/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-medium text-white">
+                          {item.neighborhood}
+                        </span>
+                      </div>
+                    )}
                     <div className="absolute bottom-3 right-3">
                       <img
-                        src={item.owner.avatar}
-                        alt="Owner"
+                        src={avatarFor(item.owner?.name, item.owner?.avatar_url)}
+                        alt={item.owner?.name ?? "Owner"}
                         className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
                       />
                     </div>
                   </div>
                   <div className="px-3 py-2.5">
-                    <p className="text-sm font-medium text-[#3D3530] line-clamp-1">
-                      {item.name}
-                    </p>
+                    <p className="text-sm font-medium text-[#3D3530] line-clamp-1">{item.name}</p>
                     <p className="text-xs text-[#3D3530]/60 line-clamp-1">
-                      {item.condition} · {item.neighborhood}
+                      {[item.condition, item.neighborhood].filter(Boolean).join(" · ")}
                     </p>
                   </div>
                 </div>

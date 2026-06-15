@@ -4,6 +4,7 @@ import { ChevronLeft, Camera, X } from "lucide-react";
 import { toast } from "sonner";
 import BottomNav from "../components/BottomNav";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
+import { NEIGHBORHOODS } from "../data/items";
 
 const categories = ["Dress", "Shirt", "Pants", "Jacket", "Sweater", "Skirt", "Shoes", "Sneakers", "Accessories"];
 const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -42,9 +43,11 @@ export default function ListItem() {
   const [title, setTitle] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedCondition, setSelectedCondition] = useState("");
   const [swapPreference, setSwapPreference] = useState("open");
+  const [busy, setBusy] = useState(false);
 
   const handleFile = async (index: number, file?: File) => {
     if (!file) return;
@@ -71,7 +74,8 @@ export default function ListItem() {
       return next;
     });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (busy) return;
     if (!title.trim()) {
       toast.error("Add a title", { description: "Give your item a name first." });
       return;
@@ -80,15 +84,17 @@ export default function ListItem() {
       toast.error("Pick a category", { description: "Choose what kind of item this is." });
       return;
     }
-    const cover = photos.find(Boolean); // first uploaded photo, if any
-    listItem({
+    setBusy(true);
+    const ok = await listItem({
       name: title.trim(),
       category: selectedCategory,
       condition: selectedCondition || "Good",
       size: selectedSize || "One Size",
-      image: cover,
+      neighborhood: selectedNeighborhood || "Ruzafa",
+      imageDataUrl: photos.find(Boolean), // first uploaded photo, if any
     });
-    navigate("/profile");
+    setBusy(false);
+    if (ok) navigate("/profile");
   };
 
   return (
@@ -193,6 +199,26 @@ export default function ListItem() {
             </div>
           </div>
 
+          {/* Neighborhood */}
+          <div>
+            <label className="block text-[#3D3530] font-medium mb-3">Neighborhood</label>
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {NEIGHBORHOODS.map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setSelectedNeighborhood(n)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                    selectedNeighborhood === n
+                      ? "bg-[#6B7A5C] text-white shadow-sm"
+                      : "bg-[#F5F0E8] text-[#3D3530] hover:bg-[#E8DDD0]"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Size */}
           <div>
             <label className="block text-[#3D3530] font-medium mb-3">Size</label>
@@ -265,10 +291,17 @@ export default function ListItem() {
           {/* Submit button */}
           <button
             onClick={handleSubmit}
-            className="w-full bg-[#C2794A] text-white py-4 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            disabled={busy}
+            className="w-full bg-[#C2794A] text-white py-4 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            <span>List item</span>
-            <span className="text-white/80 text-sm">+{CREDIT_RULES.LIST_ITEM} credits</span>
+            {busy ? (
+              <span>Listing…</span>
+            ) : (
+              <>
+                <span>List item</span>
+                <span className="text-white/80 text-sm">+{CREDIT_RULES.LIST_ITEM} credits</span>
+              </>
+            )}
           </button>
         </div>
       </div>
