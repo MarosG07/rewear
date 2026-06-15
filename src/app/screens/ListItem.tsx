@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { ChevronLeft, Camera } from "lucide-react";
+import { ChevronLeft, Camera, X } from "lucide-react";
 import { toast } from "sonner";
 import BottomNav from "../components/BottomNav";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
@@ -9,14 +9,67 @@ const categories = ["Dress", "Shirt", "Pants", "Jacket", "Sweater", "Skirt", "Sh
 const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
 const conditions = ["New", "Like New", "Good", "Worn"];
 
+// Resize a picked photo down to a small JPEG data URL so it renders fast and
+// fits comfortably in localStorage.
+function fileToDataUrl(file: File, max = 900): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Could not read image"));
+      img.onload = () => {
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Canvas unavailable"));
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.8));
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function ListItem() {
   const navigate = useNavigate();
   const { listItem } = useStore();
   const [title, setTitle] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedCondition, setSelectedCondition] = useState("");
   const [swapPreference, setSwapPreference] = useState("open");
+
+  const handleFile = async (index: number, file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    try {
+      const url = await fileToDataUrl(file);
+      setPhotos((p) => {
+        const next = [...p];
+        next[index] = url;
+        return next;
+      });
+    } catch {
+      toast.error("Couldn't load that image", { description: "Try another photo." });
+    }
+  };
+
+  const removePhoto = (index: number) =>
+    setPhotos((p) => {
+      const next = [...p];
+      next[index] = "";
+      return next;
+    });
 
   const handleSubmit = () => {
     if (!title.trim()) {
@@ -27,11 +80,13 @@ export default function ListItem() {
       toast.error("Pick a category", { description: "Choose what kind of item this is." });
       return;
     }
+    const cover = photos.find(Boolean); // first uploaded photo, if any
     listItem({
       name: title.trim(),
       category: selectedCategory,
       condition: selectedCondition || "Good",
       size: selectedSize || "One Size",
+      image: cover,
     });
     navigate("/profile");
   };
@@ -73,16 +128,47 @@ export default function ListItem() {
           <div>
             <label className="block text-[#3D3530] font-medium mb-3">Photos</label>
             <div className="grid grid-cols-3 gap-3">
-              {[1, 2, 3].map((i) => (
-                <button
+              {[0, 1, 2].map((i) => (
+                <label
                   key={i}
-                  className="aspect-square bg-[#F5F0E8] rounded-2xl flex items-center justify-center border-2 border-dashed border-[#3D3530]/20 hover:border-[#6B7A5C] transition-colors"
+                  className="relative aspect-square bg-[#F5F0E8] rounded-2xl flex items-center justify-center border-2 border-dashed border-[#3D3530]/20 hover:border-[#6B7A5C] transition-colors cursor-pointer overflow-hidden"
                 >
-                  <div className="text-center">
-                    <Camera className="w-6 h-6 text-[#3D3530]/40 mx-auto mb-1" strokeWidth={1.5} />
-                    <span className="text-xs text-[#3D3530]/40">Add</span>
-                  </div>
-                </button>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(e) => {
+                      handleFile(i, e.target.files?.[0]);
+                      e.target.value = ""; // allow re-picking the same file
+                    }}
+                  />
+                  {photos[i] ? (
+                    <>
+                      <img
+                        src={photos[i]}
+                        alt={`Photo ${i + 1}`}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Remove photo"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          removePhoto(i);
+                        }}
+                        className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/55 text-white rounded-full flex items-center justify-center backdrop-blur-sm"
+                      >
+                        <X className="w-3.5 h-3.5" strokeWidth={2} />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="text-center">
+                      <Camera className="w-6 h-6 text-[#3D3530]/40 mx-auto mb-1" strokeWidth={1.5} />
+                      <span className="text-xs text-[#3D3530]/40">Add</span>
+                    </div>
+                  )}
+                </label>
               ))}
             </div>
           </div>

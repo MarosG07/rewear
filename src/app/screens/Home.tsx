@@ -4,12 +4,11 @@ import { Search, MapPin, Grid3x3, Map, Leaf, Heart, PackageOpen } from "lucide-r
 import BottomNav from "../components/BottomNav";
 import Logo from "../components/Logo";
 import SmartImage from "../components/SmartImage";
-import { items } from "../data/items";
 import { useStore } from "../store/AppStore";
 
 export default function Home() {
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
-  const { credits, isSaved, toggleSaved } = useStore();
+  const { credits, isSaved, toggleSaved, feedItems } = useStore();
 
   return (
     <div className="h-full flex flex-col bg-[#F5F0E8] relative overflow-hidden isolate">
@@ -80,7 +79,7 @@ export default function Home() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto pb-20 px-4">
         {viewMode === "grid" ? (
-          items.length === 0 ? (
+          feedItems.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-8">
               <PackageOpen className="w-12 h-12 text-[#6B7A5C] mb-3" strokeWidth={1.5} />
               <p className="text-[#3D3530] font-medium">No items nearby yet</p>
@@ -90,7 +89,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 pt-4">
-              {items.map((item) => {
+              {feedItems.map((item) => {
                 const saved = isSaved(item.id);
                 return (
                   <Link
@@ -135,6 +134,14 @@ export default function Home() {
                             className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
                           />
                         </div>
+                      </div>
+                      <div className="px-3 py-2.5">
+                        <p className="text-sm font-medium text-[#3D3530] line-clamp-1">
+                          {item.name}
+                        </p>
+                        <p className="text-xs text-[#3D3530]/60 line-clamp-1">
+                          {item.condition} · {item.neighborhood}
+                        </p>
                       </div>
                     </div>
                   </Link>

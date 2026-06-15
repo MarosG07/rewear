@@ -2,12 +2,14 @@ import { Link } from "react-router";
 import { Heart } from "lucide-react";
 import BottomNav from "../components/BottomNav";
 import SmartImage from "../components/SmartImage";
-import { items } from "../data/items";
+import type { Item } from "../data/items";
 import { useStore } from "../store/AppStore";
 
 export default function Saved() {
-  const { savedIds, toggleSaved } = useStore();
-  const savedItems = items.filter((item) => savedIds.includes(item.id));
+  const { savedIds, toggleSaved, getItem } = useStore();
+  const savedItems = savedIds
+    .map((id) => getItem(id))
+    .filter((item): item is Item => Boolean(item));
 
   return (
     <div className="h-full flex flex-col bg-[#F5F0E8] relative overflow-hidden">
@@ -81,6 +83,14 @@ export default function Saved() {
                         className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
                       />
                     </div>
+                  </div>
+                  <div className="px-3 py-2.5">
+                    <p className="text-sm font-medium text-[#3D3530] line-clamp-1">
+                      {item.name}
+                    </p>
+                    <p className="text-xs text-[#3D3530]/60 line-clamp-1">
+                      {item.condition} · {item.neighborhood}
+                    </p>
                   </div>
                 </div>
               </Link>

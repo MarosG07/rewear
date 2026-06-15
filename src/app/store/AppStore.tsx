@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -16,8 +17,10 @@ import { items, type Item } from "../data/items";
  * screens: the swap-credit balance, saved items, the user's own listings,
  * and the swap conversations that drive the inbox + eco stats.
  *
- * State is in-memory only, so every page load starts from the same seeded
- * state (12 credits) — which keeps the demo walkthrough predictable.
+ * State is persisted to localStorage, so it survives reloads and syncs
+ * across tabs/windows on the same device (via the `storage` event).
+ * NOTE: this is per-device only — sharing listings across different
+ * devices/users would require a backend.
  */
 
 // ── Credit economy ────────────────────────────────────────────────────────
@@ -40,12 +43,15 @@ export const ECO = {
 // history don't start empty. Live completions are added on top of this.
 const BASE_COMPLETED_SWAPS = 8;
 
+const STORAGE_KEY = "rewear-state-v2";
+
 // ── Types ─────────────────────────────────────────────────────────────────
 export type SwapStatus = "pending" | "confirmed" | "completed";
 
 export interface Listing extends Item {
   status: "active" | "swapped";
   boosted: boolean;
+  userCreated?: boolean; // true for items the user listed themselves
 }
 
 export interface Conversation {
@@ -116,7 +122,40 @@ const seedConversations: Conversation[] = [
   },
 ];
 
+const seedSavedIds = [3, 6];
+
+interface PersistedState {
+  credits: number;
+  ledger: CreditEntry[];
+  savedIds: number[];
+  listings: Listing[];
+  conversations: Conversation[];
+}
+
+function loadPersisted(): PersistedState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (typeof p?.credits !== "number" || !Array.isArray(p?.listings)) return null;
+    return p as PersistedState;
+  } catch {
+    return null;
+  }
+}
+
 // ── Store shape ───────────────────────────────────────────────────────────
+export interface ListInput {
+  name: string;
+  category: string;
+  condition: string;
+  size: string;
+  image?: string;
+  neighborhood?: string;
+  description?: string;
+}
+
 interface StoreValue {
   credits: number;
   ledger: CreditEntry[];
@@ -125,8 +164,12 @@ interface StoreValue {
   conversations: Conversation[];
 
   // derived
+  feedItems: Item[]; // user listings + the public catalogue, for the browse feed
   completedSwaps: number;
   ecoStats: { itemsSwapped: number; co2Saved: number; kmAvoided: number };
+
+  // lookups
+  getItem: (id: number) => Item | undefined;
 
   // saved
   isSaved: (itemId: number) => boolean;
@@ -139,21 +182,59 @@ interface StoreValue {
   rateSwap: (conversationId: number) => void;
 
   // listings
-  listItem: (input: { name: string; category: string; condition: string; size: string }) => void;
+  listItem: (input: ListInput) => void;
   boostListing: (listingId: number) => void;
+
+  // demo
+  resetDemo: () => void;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
 
-let nextId = 1000;
-const genId = () => ++nextId;
+// Unique, monotonically increasing ids that don't collide across reloads/tabs.
+let idSeq = 0;
+const genId = () => Date.now() * 1000 + (idSeq++ % 1000);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [credits, setCredits] = useState(CREDIT_RULES.START);
-  const [ledger, setLedger] = useState<CreditEntry[]>([]);
-  const [savedIds, setSavedIds] = useState<number[]>([3, 6]);
-  const [listings, setListings] = useState<Listing[]>(seedListings);
-  const [conversations, setConversations] = useState<Conversation[]>(seedConversations);
+  const initial = loadPersisted();
+  const [credits, setCredits] = useState(initial?.credits ?? CREDIT_RULES.START);
+  const [ledger, setLedger] = useState<CreditEntry[]>(initial?.ledger ?? []);
+  const [savedIds, setSavedIds] = useState<number[]>(initial?.savedIds ?? seedSavedIds);
+  const [listings, setListings] = useState<Listing[]>(initial?.listings ?? seedListings);
+  const [conversations, setConversations] = useState<Conversation[]>(
+    initial?.conversations ?? seedConversations,
+  );
+
+  // Persist on any change.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ credits, ledger, savedIds, listings, conversations }),
+      );
+    } catch {
+      /* quota or privacy mode — ignore, app still works in-memory */
+    }
+  }, [credits, ledger, savedIds, listings, conversations]);
+
+  // Sync state when another tab/window on the same device changes it.
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY || !e.newValue) return;
+      try {
+        const p = JSON.parse(e.newValue) as PersistedState;
+        setCredits(p.credits);
+        setLedger(p.ledger);
+        setSavedIds(p.savedIds);
+        setListings(p.listings);
+        setConversations(p.conversations);
+      } catch {
+        /* ignore malformed payloads */
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 
   // ── credit helpers ──────────────────────────────────────────────────────
   const earn = (amount: number, label: string) => {
@@ -180,6 +261,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     toast(`−${amount} credits`, { description: label });
     return true;
   };
+
+  // ── lookups ───────────────────────────────────────────────────────────────
+  const getItem = (id: number): Item | undefined =>
+    listings.find((l) => l.id === id) ?? items.find((i) => i.id === id);
 
   // ── saved ────────────────────────────────────────────────────────────────
   const isSaved = (itemId: number) => savedIds.includes(itemId);
@@ -258,19 +343,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   // ── listings ──────────────────────────────────────────────────────────────
-  const listItem: StoreValue["listItem"] = ({ name, category, condition, size }) => {
-    const id = genId();
+  const listItem = (input: ListInput) => {
     const newListing: Listing = {
-      id,
-      name,
-      category,
-      condition,
-      size,
+      id: genId(),
+      name: input.name,
+      category: input.category,
+      condition: input.condition,
+      size: input.size,
       image:
+        input.image ||
         "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800",
       distance: "0.2km",
-      neighborhood: "Ruzafa",
-      description: "Freshly listed by you.",
+      neighborhood: input.neighborhood || "Ruzafa",
+      description: input.description || "Freshly listed by you.",
       owner: {
         name: "Brandon Parker",
         avatar: "https://i.pravatar.cc/150?img=12",
@@ -279,9 +364,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
       status: "active",
       boosted: false,
+      userCreated: true,
     };
     setListings((l) => [newListing, ...l]);
-    earn(CREDIT_RULES.LIST_ITEM, `Listed “${name}”`);
+    earn(CREDIT_RULES.LIST_ITEM, `Listed “${input.name}”`);
   };
 
   const boostListing = (listingId: number) => {
@@ -296,7 +382,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const resetDemo = () => {
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    setCredits(CREDIT_RULES.START);
+    setLedger([]);
+    setSavedIds(seedSavedIds);
+    setListings(seedListings);
+    setConversations(seedConversations);
+    toast("Demo reset", { description: "Back to a fresh start." });
+  };
+
   // ── derived ───────────────────────────────────────────────────────────────
+  const feedItems = useMemo<Item[]>(
+    () => [...listings.filter((l) => l.userCreated && l.status === "active"), ...items],
+    [listings],
+  );
+
   const completedSwaps = useMemo(
     () =>
       BASE_COMPLETED_SWAPS +
@@ -319,8 +424,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     savedIds,
     listings,
     conversations,
+    feedItems,
     completedSwaps,
     ecoStats,
+    getItem,
     isSaved,
     toggleSaved,
     hasRequested,
@@ -329,6 +436,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     rateSwap,
     listItem,
     boostListing,
+    resetDemo,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

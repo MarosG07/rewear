@@ -1,14 +1,13 @@
 import { useNavigate, useParams } from "react-router";
 import { ChevronLeft, Star, Heart, MapPin, Check } from "lucide-react";
-import { getItemById } from "../data/items";
 import SmartImage from "../components/SmartImage";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
 
 export default function ItemDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const item = getItemById(Number(id));
-  const { isSaved, toggleSaved, hasRequested, requestSwap } = useStore();
+  const { isSaved, toggleSaved, hasRequested, requestSwap, getItem } = useStore();
+  const item = getItem(Number(id));
 
   if (!item) {
     return (

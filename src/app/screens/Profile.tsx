@@ -1,12 +1,12 @@
-import { Leaf, Package, TrendingDown, MapPin, Clock, Rocket, Check } from "lucide-react";
+import { Leaf, Package, TrendingDown, MapPin, Clock, Rocket, Check, RotateCcw } from "lucide-react";
 import { Link } from "react-router";
 import BottomNav from "../components/BottomNav";
 import SmartImage from "../components/SmartImage";
-import { getItemById } from "../data/items";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
 
 export default function Profile() {
-  const { credits, listings, conversations, ecoStats, boostListing } = useStore();
+  const { credits, listings, conversations, ecoStats, boostListing, getItem, resetDemo } =
+    useStore();
 
   const completedSwaps = conversations.filter((c) => c.status === "completed");
 
@@ -98,6 +98,14 @@ export default function Profile() {
                         </div>
                       )}
                     </div>
+                    <div className="px-3 py-2.5">
+                      <p className="text-sm font-medium text-[#3D3530] line-clamp-1">
+                        {item.name}
+                      </p>
+                      <p className="text-xs text-[#3D3530]/60 line-clamp-1">
+                        {item.condition} · {item.neighborhood}
+                      </p>
+                    </div>
                   </div>
                 </Link>
                 {/* Boost control for active, un-boosted listings */}
@@ -134,7 +142,7 @@ export default function Profile() {
           ) : (
             <div className="space-y-3">
               {completedSwaps.map((swap) => {
-                const item = getItemById(swap.itemId);
+                const item = getItem(swap.itemId);
                 return (
                   <div key={swap.id} className="bg-white rounded-2xl p-4 shadow-sm">
                     <div className="flex gap-3">
@@ -161,6 +169,17 @@ export default function Profile() {
               })}
             </div>
           )}
+        </div>
+
+        {/* Reset demo data */}
+        <div className="px-4 mt-8 flex justify-center">
+          <button
+            onClick={resetDemo}
+            className="flex items-center gap-1.5 text-sm text-[#3D3530]/50 hover:text-[#3D3530] transition-colors"
+          >
+            <RotateCcw className="w-4 h-4" strokeWidth={1.5} />
+            Reset demo data
+          </button>
         </div>
       </div>
 
