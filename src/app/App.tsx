@@ -22,8 +22,10 @@ export default function App() {
 
   return (
     <StoreProvider>
-      <div className="min-h-screen bg-[#E8DDD0] flex items-center justify-center py-4 px-2 sm:px-4">
-        <div className="w-full max-w-[390px] h-[calc(100vh-2rem)] max-h-[844px] bg-white shadow-2xl overflow-hidden relative rounded-[40px]">
+      {/* On phones the app fills the screen like an installed app; from `sm`
+          up it sits inside the centered device frame for desktop preview. */}
+      <div className="min-h-[100dvh] bg-[#E8DDD0] sm:flex sm:items-center sm:justify-center sm:py-4 sm:px-4">
+        <div className="relative w-full h-[100dvh] bg-white overflow-hidden sm:h-[calc(100dvh-2rem)] sm:max-w-[390px] sm:max-h-[844px] sm:mx-auto sm:rounded-[40px] sm:shadow-2xl">
           {/* The app mounts immediately; the splash fades out on top of it.
               This keeps the splash from gating the whole app behind a
               requestAnimationFrame transition (which a background tab pauses). */}

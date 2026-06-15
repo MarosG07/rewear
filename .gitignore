@@ -21,3 +21,5 @@ npm-debug.log*
 # Vercel / Netlify local state
 .vercel/
 .netlify/
+
+.vercel
