@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# SPA fallback: the app uses createBrowserRouter, so every path must serve
+# index.html and let the client router resolve it (200, not a redirect).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
