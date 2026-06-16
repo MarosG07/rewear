@@ -61,6 +61,7 @@ export default function Home() {
 
   const filtered = listings
     .filter((l) => {
+      if (l.status !== "active") return false; // don't show swapped items in browse
       const q = search.trim().toLowerCase();
       if (q && ![l.name, l.category, l.neighborhood].some((v) => v?.toLowerCase().includes(q)))
         return false;
