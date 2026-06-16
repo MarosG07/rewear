@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { Search, MapPin, Grid3x3, Map, Leaf, Heart, PackageOpen, SlidersHorizontal, X } from "lucide-react";
+import { Search, MapPin, Grid3x3, Map, Leaf, Heart, PackageOpen, SlidersHorizontal, X, RotateCw } from "lucide-react";
 import BottomNav from "../components/BottomNav";
 import Logo from "../components/Logo";
 import SmartImage from "../components/SmartImage";
@@ -47,7 +47,14 @@ function FilterRow({
 
 export default function Home() {
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
-  const { credits, listings, loading, isSaved, toggleSaved } = useStore();
+  const { credits, listings, loading, isSaved, toggleSaved, reload } = useStore();
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    await reload();
+    setRefreshing(false);
+  };
   const [showSearch, setShowSearch] = useState(false);
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -100,6 +107,14 @@ export default function Home() {
               <Leaf className="w-3.5 h-3.5" strokeWidth={1.5} />
               <span className="text-xs font-medium tabular-nums">{credits}</span>
             </div>
+            <button
+              onClick={refresh}
+              disabled={refreshing}
+              aria-label="Refresh"
+              className="p-2 rounded-full hover:bg-[#E8DDD0] transition-colors"
+            >
+              <RotateCw className={`w-5 h-5 text-[#3D3530] ${refreshing ? "animate-spin" : ""}`} strokeWidth={1.5} />
+            </button>
             <button
               onClick={() => setShowSearch((s) => !s)}
               className={`p-2 rounded-full transition-colors ${showSearch ? "bg-[#E8DDD0]" : "hover:bg-[#E8DDD0]"}`}

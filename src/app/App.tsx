@@ -9,13 +9,32 @@ import { AuthProvider, useAuth } from "./store/AuthContext";
 import { StoreProvider } from "./store/AppStore";
 
 export default function App() {
+  // Track the visual viewport so the app shrinks to fit above the on-screen
+  // keyboard (otherwise the chat input gets pushed off the bottom on mobile).
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const apply = () => {
+      // Only trust plausible viewport heights (avoids odd 0/tiny values in
+      // some embedded/headless contexts); otherwise fall back to 100dvh.
+      if (vv.height >= 200 && vv.height <= window.innerHeight + 4) {
+        document.documentElement.style.setProperty("--app-h", `${Math.round(vv.height)}px`);
+      } else {
+        document.documentElement.style.removeProperty("--app-h");
+      }
+    };
+    apply();
+    vv.addEventListener("resize", apply);
+    return () => vv.removeEventListener("resize", apply);
+  }, []);
+
   return (
     <AuthProvider>
       {/* On phones the app is locked to the viewport (only inner content
           scrolls, so the address bar doesn't toggle and resize things); from
           `sm` up it sits inside the centered device frame for desktop. */}
-      <div className="h-[100dvh] overflow-hidden bg-[#E8DDD0] sm:h-auto sm:min-h-[100dvh] sm:overflow-visible sm:flex sm:items-center sm:justify-center sm:py-4 sm:px-4">
-        <div className="relative w-full h-[100dvh] bg-white overflow-hidden sm:h-[calc(100dvh-2rem)] sm:max-w-[390px] sm:max-h-[844px] sm:mx-auto sm:rounded-[40px] sm:shadow-2xl">
+      <div className="h-[var(--app-h,100dvh)] overflow-hidden bg-[#E8DDD0] sm:h-auto sm:min-h-[100dvh] sm:overflow-visible sm:flex sm:items-center sm:justify-center sm:py-4 sm:px-4">
+        <div className="relative w-full h-[var(--app-h,100dvh)] bg-white overflow-hidden sm:h-[calc(100dvh-2rem)] sm:max-w-[390px] sm:max-h-[844px] sm:mx-auto sm:rounded-[40px] sm:shadow-2xl">
           <Shell />
         </div>
       </div>

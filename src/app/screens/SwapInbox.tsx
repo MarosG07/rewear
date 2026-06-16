@@ -1,21 +1,26 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Check, Star, MessageSquare, Send, Calendar, Gift, CalendarPlus } from "lucide-react";
+import { useNavigate } from "react-router";
+import { ChevronLeft, Check, MessageSquare, Send, Calendar, Gift, CalendarPlus, Star } from "lucide-react";
 import BottomNav from "../components/BottomNav";
 import { supabase } from "../lib/supabase";
-import { useStore, CREDIT_RULES } from "../store/AppStore";
+import { useStore } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
 import { avatarFor, listingImage } from "../lib/images";
 import type { Conversation, Message, SwapStatus } from "../lib/types";
 
 const statusLabel: Record<SwapStatus, string> = {
-  pending: "Pending",
+  pending: "Requested",
+  accepted: "Accepted",
   confirmed: "Meetup set",
   completed: "Completed",
+  declined: "Declined",
 };
 const statusStyle: Record<SwapStatus, string> = {
   pending: "bg-[#C2794A]/10 text-[#C2794A]",
+  accepted: "bg-[#6B7A5C]/15 text-[#6B7A5C]",
   confirmed: "bg-[#6B7A5C]/15 text-[#6B7A5C]",
   completed: "bg-[#3D3530]/10 text-[#3D3530]/70",
+  declined: "bg-[#3D3530]/8 text-[#3D3530]/50",
 };
 
 function partnerOf(c: Conversation, myId?: string) {
@@ -56,6 +61,7 @@ export default function SwapInbox() {
         ) : (
           conversations.map((conv) => {
             const partner = partnerOf(conv, myId);
+            const incoming = conv.owner_id === myId && conv.status === "pending";
             return (
               <button
                 key={conv.id}
@@ -80,7 +86,7 @@ export default function SwapInbox() {
                     <p className="text-sm text-[#3D3530]/70 line-clamp-1">{conv.listing?.name ?? "Swap"}</p>
                     <div className="flex items-center gap-1.5 mt-1.5">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyle[conv.status]}`}>
-                        {statusLabel[conv.status]}
+                        {incoming ? "Wants to swap" : statusLabel[conv.status]}
                       </span>
                       {conv.offered && (
                         <span className="text-xs text-[#6B7A5C] flex items-center gap-0.5">
@@ -102,22 +108,20 @@ export default function SwapInbox() {
 }
 
 function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; onBack: () => void }) {
-  const { completeSwap, submitReview, proposeMeetup, confirmMeetup } = useStore();
+  const navigate = useNavigate();
+  const { acceptSwap, declineSwap, completeSwap, proposeMeetup, confirmMeetup } = useStore();
   const partner = partnerOf(chat, myId);
+  const isOwner = chat.owner_id === myId;
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
-  const isCompleted = chat.status === "completed";
 
-  // meetup form
   const [showMeetup, setShowMeetup] = useState(false);
   const [meetupWhen, setMeetupWhen] = useState("");
   const [meetupPlace, setMeetupPlace] = useState("");
 
-  // review form
-  const [rating, setRating] = useState(5);
-  const [reviewText, setReviewText] = useState("");
+  const inProgress = chat.status === "accepted" || chat.status === "confirmed";
 
   useEffect(() => {
     let active = true;
@@ -157,9 +161,7 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
     if (!body || sending) return;
     setSending(true);
     setDraft("");
-    const { error } = await supabase
-      .from("messages")
-      .insert({ conversation_id: chat.id, sender_id: myId, body });
+    const { error } = await supabase.from("messages").insert({ conversation_id: chat.id, sender_id: myId, body });
     setSending(false);
     if (error) setDraft(body);
   };
@@ -184,15 +186,14 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
           <button onClick={onBack} className="p-2 hover:bg-[#F5F0E8] rounded-full transition-colors">
             <ChevronLeft className="w-5 h-5 text-[#3D3530]" strokeWidth={1.5} />
           </button>
-          <img
-            src={avatarFor(partner?.name, partner?.avatar_url)}
-            alt={partner?.name ?? "User"}
-            className="w-10 h-10 rounded-full"
-          />
+          <img src={avatarFor(partner?.name, partner?.avatar_url)} alt={partner?.name ?? "User"} className="w-10 h-10 rounded-full" />
           <div className="flex-1">
             <p className="font-medium text-[#3D3530]">{partner?.name ?? "A Rewearer"}</p>
             <p className="text-sm text-[#3D3530]/60">{chat.listing?.name ?? "Swap"}</p>
           </div>
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusStyle[chat.status]}`}>
+            {statusLabel[chat.status]}
+          </span>
         </div>
       </div>
 
@@ -200,31 +201,27 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
       {chat.offered && (
         <div className="bg-[#6B7A5C]/10 px-4 py-2 flex items-center gap-2 text-sm text-[#3D3530] shrink-0">
           <Gift className="w-4 h-4 text-[#6B7A5C]" strokeWidth={1.5} />
-          <span>
-            Offering in return: <span className="font-medium">{chat.offered.name}</span>
-          </span>
+          <span>Offering in return: <span className="font-medium">{chat.offered.name}</span></span>
+        </div>
+      )}
+
+      {/* "Arrange a meetup" prompt once accepted */}
+      {inProgress && !meetupNice && (
+        <div className="bg-[#C2794A]/12 px-4 py-2 flex items-center gap-2 text-sm text-[#3D3530] shrink-0">
+          <Calendar className="w-4 h-4 text-[#C2794A]" strokeWidth={1.5} />
+          <span>You're matched — arrange a meetup to swap.</span>
         </div>
       )}
 
       {/* Meetup banner */}
       {meetupNice && (
-        <div
-          className={`px-4 py-2.5 flex items-center justify-between gap-2 shrink-0 ${
-            chat.meetup_confirmed ? "bg-[#6B7A5C] text-white" : "bg-[#C2794A]/15 text-[#3D3530]"
-          }`}
-        >
+        <div className={`px-4 py-2.5 flex items-center justify-between gap-2 shrink-0 ${chat.meetup_confirmed ? "bg-[#6B7A5C] text-white" : "bg-[#C2794A]/15 text-[#3D3530]"}`}>
           <div className="flex items-center gap-2 text-sm">
             <Calendar className="w-4 h-4" strokeWidth={1.5} />
-            <span className="font-medium">
-              {meetupNice}
-              {chat.meetup_place ? ` · ${chat.meetup_place}` : ""}
-            </span>
+            <span className="font-medium">{meetupNice}{chat.meetup_place ? ` · ${chat.meetup_place}` : ""}</span>
           </div>
-          {!chat.meetup_confirmed && !isCompleted && (
-            <button
-              onClick={() => confirmMeetup(chat.id)}
-              className="bg-[#6B7A5C] text-white text-xs font-medium px-3 py-1.5 rounded-full shrink-0"
-            >
+          {!chat.meetup_confirmed && inProgress && (
+            <button onClick={() => confirmMeetup(chat.id)} className="bg-[#6B7A5C] text-white text-xs font-medium px-3 py-1.5 rounded-full shrink-0">
               Confirm
             </button>
           )}
@@ -238,18 +235,8 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
           const mine = m.sender_id === myId;
           return (
             <div key={m.id} className={`flex gap-2 ${mine ? "justify-end" : ""}`}>
-              {!mine && (
-                <img
-                  src={avatarFor(partner?.name, partner?.avatar_url)}
-                  alt=""
-                  className="w-8 h-8 rounded-full self-end"
-                />
-              )}
-              <div
-                className={`rounded-2xl px-4 py-2.5 shadow-sm max-w-[72%] ${
-                  mine ? "bg-[#6B7A5C] text-white rounded-tr-sm" : "bg-white text-[#3D3530] rounded-tl-sm"
-                }`}
-              >
+              {!mine && <img src={avatarFor(partner?.name, partner?.avatar_url)} alt="" className="w-8 h-8 rounded-full self-end" />}
+              <div className={`rounded-2xl px-4 py-2.5 shadow-sm max-w-[72%] ${mine ? "bg-[#6B7A5C] text-white rounded-tr-sm" : "bg-white text-[#3D3530] rounded-tl-sm"}`}>
                 <p className="whitespace-pre-wrap break-words">{m.body}</p>
               </div>
             </div>
@@ -260,92 +247,88 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
 
       {/* Action area */}
       <div className="bg-white border-t border-[#3D3530]/10 px-4 pt-3 shrink-0">
-        {!isCompleted ? (
-          <>
-            {showMeetup ? (
-              <div className="bg-[#F5F0E8] rounded-2xl p-3 mb-3 space-y-2">
-                <p className="text-sm font-medium text-[#3D3530]">Propose a meetup</p>
-                <input
-                  type="datetime-local"
-                  value={meetupWhen}
-                  onChange={(e) => setMeetupWhen(e.target.value)}
-                  className="w-full bg-white rounded-xl px-3 py-2 text-sm text-[#3D3530] focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
-                />
-                <input
-                  type="text"
-                  value={meetupPlace}
-                  onChange={(e) => setMeetupPlace(e.target.value)}
-                  placeholder="Place (e.g. Mercado de Ruzafa)"
-                  className="w-full bg-white rounded-xl px-3 py-2 text-sm text-[#3D3530] placeholder-[#3D3530]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={submitMeetup}
-                    disabled={!meetupWhen}
-                    className="flex-1 bg-[#6B7A5C] text-white py-2 rounded-xl text-sm font-medium disabled:opacity-50"
-                  >
-                    Propose
-                  </button>
-                  <button
-                    onClick={() => setShowMeetup(false)}
-                    className="px-4 bg-white text-[#3D3530] py-2 rounded-xl text-sm font-medium"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex gap-2 mb-3">
-                <button
-                  onClick={() => setShowMeetup(true)}
-                  className="flex-1 bg-[#F5F0E8] text-[#3D3530] py-3 rounded-2xl font-medium flex items-center justify-center gap-2 hover:bg-[#E8DDD0] transition-colors"
-                >
-                  <CalendarPlus className="w-5 h-5 text-[#6B7A5C]" strokeWidth={1.5} />
-                  Meetup
-                </button>
-                <button
-                  onClick={() => completeSwap(chat.id)}
-                  className="flex-1 bg-[#6B7A5C] text-white py-3 rounded-2xl font-medium flex items-center justify-center gap-1.5 hover:bg-[#5d6b4f] transition-all active:scale-[0.98]"
-                >
-                  <Check className="w-5 h-5" strokeWidth={2} />
-                  Complete
-                  <span className="text-white/80 text-xs">+{CREDIT_RULES.COMPLETE_SWAP}</span>
-                </button>
-              </div>
-            )}
-          </>
-        ) : !chat.rated ? (
-          <div className="bg-[#F5F0E8] rounded-2xl p-3 mb-3">
-            <p className="text-sm font-medium text-[#3D3530] mb-2">Rate this swap</p>
-            <div className="flex gap-1 mb-2">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <button key={i} onClick={() => setRating(i)}>
-                  <Star
-                    className={`w-7 h-7 ${i <= rating ? "text-[#C2794A] fill-[#C2794A]" : "text-[#3D3530]/25"}`}
-                    strokeWidth={1.5}
-                  />
-                </button>
-              ))}
+        {chat.status === "pending" ? (
+          isOwner ? (
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={() => declineSwap(chat.id)}
+                className="px-5 bg-[#F5F0E8] text-[#3D3530] py-3 rounded-2xl font-medium hover:bg-[#E8DDD0] transition-colors"
+              >
+                Decline
+              </button>
+              <button
+                onClick={() => acceptSwap(chat.id)}
+                className="flex-1 bg-[#6B7A5C] text-white py-3 rounded-2xl font-medium flex items-center justify-center gap-2 hover:bg-[#5d6b4f] transition-all active:scale-[0.98]"
+              >
+                <Check className="w-5 h-5" strokeWidth={2} />
+                Accept swap
+              </button>
             </div>
-            <textarea
-              value={reviewText}
-              onChange={(e) => setReviewText(e.target.value)}
-              rows={2}
-              placeholder={`How was swapping with ${partner?.name ?? "them"}?`}
-              className="w-full bg-white rounded-xl px-3 py-2 text-sm text-[#3D3530] placeholder-[#3D3530]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C] resize-none mb-2"
-            />
+          ) : (
+            <div className="w-full bg-[#F5F0E8] text-[#3D3530]/70 py-3 rounded-2xl font-medium text-center mb-3 text-sm">
+              Waiting for {partner?.name ?? "them"} to accept…
+            </div>
+          )
+        ) : chat.status === "declined" ? (
+          <div className="w-full bg-[#F5F0E8] text-[#3D3530]/60 py-3 rounded-2xl font-medium text-center mb-3 text-sm">
+            This swap was declined.
+          </div>
+        ) : chat.status === "completed" ? (
+          chat.rated ? (
+            <div className="w-full bg-[#F5F0E8] text-[#3D3530] py-2.5 rounded-2xl font-medium flex items-center justify-center gap-2 mb-3 text-sm">
+              <Check className="w-4 h-4 text-[#6B7A5C]" strokeWidth={2} />
+              Swap complete — thanks for the review!
+            </div>
+          ) : (
             <button
-              onClick={() => submitReview(chat.id, rating, reviewText)}
-              className="w-full bg-[#C2794A] text-white py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5"
+              onClick={() => navigate(`/rate/${chat.id}`)}
+              className="w-full bg-[#C2794A] text-white py-3 rounded-2xl font-medium flex items-center justify-center gap-2 mb-3 hover:bg-[#b36d3f] transition-all active:scale-[0.98]"
             >
-              Submit review
-              <span className="text-white/80 text-xs">+{CREDIT_RULES.FIVE_STAR}</span>
+              <Star className="w-5 h-5 fill-white" strokeWidth={1.5} />
+              Rate this swap
             </button>
+          )
+        ) : showMeetup ? (
+          <div className="bg-[#F5F0E8] rounded-2xl p-3 mb-3 space-y-2">
+            <p className="text-sm font-medium text-[#3D3530]">Propose a meetup</p>
+            <input
+              type="datetime-local"
+              value={meetupWhen}
+              onChange={(e) => setMeetupWhen(e.target.value)}
+              className="w-full bg-white rounded-xl px-3 py-2 text-sm text-[#3D3530] focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
+            />
+            <input
+              type="text"
+              value={meetupPlace}
+              onChange={(e) => setMeetupPlace(e.target.value)}
+              placeholder="Place (e.g. Mercado de Ruzafa)"
+              className="w-full bg-white rounded-xl px-3 py-2 text-sm text-[#3D3530] placeholder-[#3D3530]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
+            />
+            <div className="flex gap-2">
+              <button onClick={submitMeetup} disabled={!meetupWhen} className="flex-1 bg-[#6B7A5C] text-white py-2 rounded-xl text-sm font-medium disabled:opacity-50">
+                Propose
+              </button>
+              <button onClick={() => setShowMeetup(false)} className="px-4 bg-white text-[#3D3530] py-2 rounded-xl text-sm font-medium">
+                Cancel
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="w-full bg-[#F5F0E8] text-[#3D3530] py-2.5 rounded-2xl font-medium flex items-center justify-center gap-2 mb-3 text-sm">
-            <Check className="w-4 h-4 text-[#6B7A5C]" strokeWidth={2} />
-            Swap complete — thanks for the review!
+          <div className="flex gap-2 mb-3">
+            <button
+              onClick={() => setShowMeetup(true)}
+              className="flex-1 bg-[#F5F0E8] text-[#3D3530] py-3 rounded-2xl font-medium flex items-center justify-center gap-2 hover:bg-[#E8DDD0] transition-colors"
+            >
+              <CalendarPlus className="w-5 h-5 text-[#6B7A5C]" strokeWidth={1.5} />
+              {meetupNice ? "Reschedule" : "Arrange meetup"}
+            </button>
+            <button
+              onClick={() => completeSwap(chat.id)}
+              className="flex-1 bg-[#6B7A5C] text-white py-3 rounded-2xl font-medium flex items-center justify-center gap-1.5 hover:bg-[#5d6b4f] transition-all active:scale-[0.98]"
+            >
+              <Check className="w-5 h-5" strokeWidth={2} />
+              Complete
+            </button>
           </div>
         )}
 

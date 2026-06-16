@@ -26,7 +26,7 @@ export interface Listing {
   owner?: Pick<Profile, "id" | "name" | "avatar_url" | "location"> | null;
 }
 
-export type SwapStatus = "pending" | "confirmed" | "completed";
+export type SwapStatus = "pending" | "accepted" | "declined" | "confirmed" | "completed";
 
 export interface Conversation {
   id: string;

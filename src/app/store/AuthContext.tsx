@@ -63,6 +63,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // When the app (esp. an installed PWA) is reopened, force a session check so
+  // an expired token gets refreshed instead of bouncing the user to sign-in.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        supabase.auth.startAutoRefresh();
+        supabase.auth.getSession().then(({ data }) => setSession(data.session));
+      } else {
+        supabase.auth.stopAutoRefresh();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+
   const signUp = async (email: string, password: string, name: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,

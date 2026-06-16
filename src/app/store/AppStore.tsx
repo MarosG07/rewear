@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { supabase } from "../lib/supabase";
 import { uploadImage } from "../lib/upload";
+import { router } from "../routes";
 import type { Conversation, Listing } from "../lib/types";
 import { useAuth } from "./AuthContext";
 
@@ -71,10 +72,13 @@ interface StoreValue {
 
   hasRequested: (listingId: string) => boolean;
   requestSwap: (listing: Listing, offeredListingId?: string) => Promise<void>;
+  acceptSwap: (conversationId: string) => Promise<void>;
+  declineSwap: (conversationId: string) => Promise<void>;
   completeSwap: (conversationId: string) => Promise<void>;
   submitReview: (conversationId: string, rating: number, comment: string) => Promise<void>;
   proposeMeetup: (conversationId: string, when: string, place: string) => Promise<void>;
   confirmMeetup: (conversationId: string) => Promise<void>;
+  purchaseCredits: (amount: number) => Promise<void>;
 
   listItem: (input: ListInput) => Promise<boolean>;
   updateListing: (listingId: string, input: EditInput, newImageDataUrls?: string[]) => Promise<boolean>;
@@ -215,7 +219,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const changeCredits = async (delta: number, label: string): Promise<boolean> => {
     const current = profile?.credits ?? 0;
     if (delta < 0 && current + delta < 0) {
-      toast.error("Not enough credits", { description: `You need ${-delta} credits.` });
+      toast.error("Not enough credits", {
+        description: `You need ${-delta} credits.`,
+        action: { label: "Get more", onClick: () => router.navigate("/credits") },
+      });
       return false;
     }
     const next = current + delta;
@@ -290,9 +297,53 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await loadConversations();
   };
 
+  const acceptSwap = async (conversationId: string) => {
+    const convo = conversations.find((c) => c.id === conversationId);
+    if (!convo || convo.owner_id !== userId || convo.status !== "pending") return;
+    const { error } = await supabase
+      .from("conversations")
+      .update({ status: "accepted" })
+      .eq("id", conversationId);
+    if (error) {
+      toast.error("Couldn't accept the swap");
+      return;
+    }
+    await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: userId,
+      body: "✅ Accepted the swap — let's arrange a meetup!",
+    });
+    toast.success("Swap accepted");
+    await loadConversations();
+  };
+
+  const declineSwap = async (conversationId: string) => {
+    const convo = conversations.find((c) => c.id === conversationId);
+    if (!convo || convo.owner_id !== userId || convo.status !== "pending") return;
+    const { error } = await supabase
+      .from("conversations")
+      .update({ status: "declined" })
+      .eq("id", conversationId);
+    if (error) {
+      toast.error("Couldn't decline the swap");
+      return;
+    }
+    await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: userId,
+      body: "Declined this swap request.",
+    });
+    toast("Swap declined");
+    await loadConversations();
+  };
+
   const completeSwap = async (conversationId: string) => {
     const convo = conversations.find((c) => c.id === conversationId);
     if (!convo || convo.status === "completed") return;
+    if (convo.status === "pending" || convo.status === "declined") {
+      toast("Not ready yet", { description: "The owner needs to accept the swap first." });
+      return;
+    }
     const { error } = await supabase
       .from("conversations")
       .update({ status: "completed" })
@@ -352,7 +403,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const confirmMeetup = async (conversationId: string) => {
     const { error } = await supabase
       .from("conversations")
-      .update({ meetup_confirmed: true, status: "confirmed" })
+      .update({ meetup_confirmed: true })
       .eq("id", conversationId);
     if (error) {
       toast.error("Couldn't confirm meetup");
@@ -465,6 +516,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     toast(status === "swapped" ? "Marked as swapped" : "Marked as available");
   };
 
+  // Placeholder credit purchase — no real payment processing.
+  const purchaseCredits = async (amount: number) => {
+    await changeCredits(amount, `Purchased ${amount} credits`);
+  };
+
   // ── derived ───────────────────────────────────────────────────────────
   const completedSwaps = useMemo(
     () => conversations.filter((c) => c.status === "completed").length,
@@ -494,10 +550,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     toggleSaved,
     hasRequested,
     requestSwap,
+    acceptSwap,
+    declineSwap,
     completeSwap,
     submitReview,
     proposeMeetup,
     confirmMeetup,
+    purchaseCredits,
     listItem,
     updateListing,
     boostListing,

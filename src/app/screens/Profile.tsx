@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Leaf, Package, TrendingDown, MapPin, Clock, Rocket, Check, LogOut, Pencil, Bell } from "lucide-react";
+import { Leaf, Package, TrendingDown, MapPin, Clock, Rocket, Check, LogOut, Pencil, Bell, Plus } from "lucide-react";
 import { Link } from "react-router";
 import BottomNav from "../components/BottomNav";
 import SmartImage from "../components/SmartImage";
@@ -57,10 +57,16 @@ export default function Profile() {
                 <MapPin className="w-4 h-4" strokeWidth={1.5} />
                 <span className="text-sm">{profile?.location ?? "Valencia, Spain"}</span>
               </div>
-              <div className="bg-gradient-to-r from-[#C2794A] to-[#b36d3f] text-white px-4 py-2 rounded-full inline-flex items-center gap-2 shadow-sm">
+              <Link
+                to="/credits"
+                className="bg-gradient-to-r from-[#C2794A] to-[#b36d3f] text-white pl-4 pr-2.5 py-2 rounded-full inline-flex items-center gap-2 shadow-sm hover:opacity-95 active:scale-[0.98] transition-all"
+              >
                 <Leaf className="w-4 h-4" strokeWidth={1.5} />
                 <span className="font-medium tabular-nums">{credits} swap credits</span>
-              </div>
+                <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+                  <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                </span>
+              </Link>
             </div>
           </div>
 

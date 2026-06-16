@@ -7,6 +7,8 @@ import SwapInbox from "./screens/SwapInbox";
 import Saved from "./screens/Saved";
 import Profile from "./screens/Profile";
 import UserProfile from "./screens/UserProfile";
+import RateSwap from "./screens/RateSwap";
+import Credits from "./screens/Credits";
 
 export const router = createBrowserRouter([
   {
@@ -40,5 +42,13 @@ export const router = createBrowserRouter([
   {
     path: "/user/:id",
     Component: UserProfile,
+  },
+  {
+    path: "/rate/:id",
+    Component: RateSwap,
+  },
+  {
+    path: "/credits",
+    Component: Credits,
   },
 ]);
