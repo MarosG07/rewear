@@ -4,6 +4,7 @@ import { Search, MapPin, Grid3x3, Map, Leaf, Heart, PackageOpen } from "lucide-r
 import BottomNav from "../components/BottomNav";
 import Logo from "../components/Logo";
 import SmartImage from "../components/SmartImage";
+import MapView from "../components/MapView";
 import { useStore } from "../store/AppStore";
 import { listingImage, avatarFor } from "../lib/images";
 
@@ -69,15 +70,13 @@ export default function Home() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto pb-20 px-4">
-        {viewMode === "map" ? (
-          <div className="h-full bg-[#E8DDD0] rounded-3xl mt-5 flex items-center justify-center">
-            <div className="text-center">
-              <Map className="w-12 h-12 text-[#6B7A5C] mx-auto mb-3" strokeWidth={1.5} />
-              <p className="text-[#3D3530]/60">Map view coming soon</p>
-            </div>
-          </div>
-        ) : loading ? (
+      {viewMode === "map" ? (
+        <div className="flex-1 overflow-hidden px-4 py-4">
+          <MapView listings={listings} />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto overscroll-contain pb-8 px-4">
+          {loading ? (
           <div className="grid grid-cols-2 gap-3 pt-4">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="bg-white rounded-3xl overflow-hidden shadow-sm">
@@ -162,8 +161,9 @@ export default function Home() {
               );
             })}
           </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       <BottomNav active="browse" />
     </div>

@@ -19,6 +19,9 @@ interface AuthValue {
   /** Patch the cached profile locally (e.g. after a credit change). */
   patchProfile: (partial: Partial<Profile>) => void;
   refreshProfile: () => Promise<void>;
+  updateProfile: (
+    fields: Partial<Pick<Profile, "name" | "location" | "avatar_url">>,
+  ) => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -89,9 +92,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (session) setProfile(await fetchProfile(session.user.id));
   };
 
+  const updateProfile: AuthValue["updateProfile"] = async (fields) => {
+    if (!session) return "Not signed in";
+    const { error } = await supabase.from("profiles").update(fields).eq("id", session.user.id);
+    if (error) return error.message;
+    patchProfile(fields);
+    return null;
+  };
+
   return (
     <AuthContext.Provider
-      value={{ session, profile, loading, signUp, signIn, signOut, patchProfile, refreshProfile }}
+      value={{ session, profile, loading, signUp, signIn, signOut, patchProfile, refreshProfile, updateProfile }}
     >
       {children}
     </AuthContext.Provider>

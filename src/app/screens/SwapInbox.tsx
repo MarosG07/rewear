@@ -51,7 +51,7 @@ export default function SwapInbox() {
         <h1 className="font-heading text-2xl text-[#3D3530]">Swap inbox</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-20">
+      <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
         {conversations.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-8">
             <div className="w-16 h-16 rounded-full bg-[#E8DDD0] flex items-center justify-center mb-4">

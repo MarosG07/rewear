@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router";
-import { ChevronLeft, Heart, MapPin, Check } from "lucide-react";
+import { ChevronLeft, Heart, MapPin, Check, Trash2, RotateCcw } from "lucide-react";
 import SmartImage from "../components/SmartImage";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
@@ -9,7 +9,16 @@ export default function ItemDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { session } = useAuth();
-  const { getListing, loading, isSaved, toggleSaved, hasRequested, requestSwap } = useStore();
+  const {
+    getListing,
+    loading,
+    isSaved,
+    toggleSaved,
+    hasRequested,
+    requestSwap,
+    deleteListing,
+    setListingStatus,
+  } = useStore();
   const item = id ? getListing(id) : undefined;
 
   if (!item) {
@@ -102,40 +111,73 @@ export default function ItemDetail() {
         {/* Action buttons */}
         <div className="space-y-3 pb-5">
           {isOwn ? (
-            <div className="w-full bg-white text-[#3D3530]/70 py-4 rounded-2xl font-medium text-center border border-[#3D3530]/10">
-              This is your listing
-            </div>
-          ) : requested ? (
-            <button
-              disabled
-              className="w-full bg-[#6B7A5C] text-white py-4 rounded-2xl font-medium shadow-sm flex items-center justify-center gap-2 cursor-default"
-            >
-              <Check className="w-5 h-5" strokeWidth={2} />
-              Swap requested
-            </button>
+            <>
+              <button
+                onClick={() =>
+                  setListingStatus(item.id, item.status === "swapped" ? "active" : "swapped")
+                }
+                className="w-full bg-[#6B7A5C] text-white py-4 rounded-2xl font-medium shadow-sm hover:bg-[#5d6b4f] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                {item.status === "swapped" ? (
+                  <>
+                    <RotateCcw className="w-5 h-5" strokeWidth={1.5} />
+                    Mark as available
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-5 h-5" strokeWidth={2} />
+                    Mark as swapped
+                  </>
+                )}
+              </button>
+              <button
+                onClick={async () => {
+                  if (window.confirm("Delete this listing? This can't be undone.")) {
+                    await deleteListing(item.id);
+                    navigate("/profile");
+                  }
+                }}
+                className="w-full bg-transparent text-[#b3402f] border border-[#b3402f]/30 py-4 rounded-2xl font-medium hover:bg-[#b3402f]/5 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-5 h-5" strokeWidth={1.5} />
+                Delete listing
+              </button>
+            </>
           ) : (
-            <button
-              onClick={() => requestSwap(item)}
-              className="w-full bg-[#C2794A] text-white py-4 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-            >
-              <span>Request swap</span>
-              <span className="text-white/80 text-sm">−{CREDIT_RULES.REQUEST_SWAP} credits</span>
-            </button>
+            <>
+              {requested ? (
+                <button
+                  disabled
+                  className="w-full bg-[#6B7A5C] text-white py-4 rounded-2xl font-medium shadow-sm flex items-center justify-center gap-2 cursor-default"
+                >
+                  <Check className="w-5 h-5" strokeWidth={2} />
+                  Swap requested
+                </button>
+              ) : (
+                <button
+                  onClick={() => requestSwap(item)}
+                  className="w-full bg-[#C2794A] text-white py-4 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <span>Request swap</span>
+                  <span className="text-white/80 text-sm">−{CREDIT_RULES.REQUEST_SWAP} credits</span>
+                </button>
+              )}
+              <button
+                onClick={() => toggleSaved(item.id)}
+                className={`w-full py-4 rounded-2xl font-medium border transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
+                  saved
+                    ? "bg-white text-[#C2794A] border-[#C2794A]/30"
+                    : "bg-transparent text-[#3D3530] border-[#3D3530]/20 hover:bg-white"
+                }`}
+              >
+                <Heart
+                  className={`w-5 h-5 ${saved ? "fill-[#C2794A] text-[#C2794A]" : ""}`}
+                  strokeWidth={1.5}
+                />
+                {saved ? "Saved" : "Save item"}
+              </button>
+            </>
           )}
-          <button
-            onClick={() => toggleSaved(item.id)}
-            className={`w-full py-4 rounded-2xl font-medium border transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
-              saved
-                ? "bg-white text-[#C2794A] border-[#C2794A]/30"
-                : "bg-transparent text-[#3D3530] border-[#3D3530]/20 hover:bg-white"
-            }`}
-          >
-            <Heart
-              className={`w-5 h-5 ${saved ? "fill-[#C2794A] text-[#C2794A]" : ""}`}
-              strokeWidth={1.5}
-            />
-            {saved ? "Saved" : "Save item"}
-          </button>
         </div>
       </div>
     </div>

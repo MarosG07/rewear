@@ -7,7 +7,7 @@ interface BottomNavProps {
 
 export default function BottomNav({ active }: BottomNavProps) {
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-[#3D3530]/10 px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] shadow-lg z-20">
+    <div className="relative shrink-0 bg-white border-t border-[#3D3530]/10 px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] shadow-lg z-20">
       <div className="flex items-center justify-around max-w-md mx-auto relative">
         <Link
           to="/"

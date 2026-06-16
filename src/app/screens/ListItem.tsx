@@ -4,38 +4,12 @@ import { ChevronLeft, Camera, X } from "lucide-react";
 import { toast } from "sonner";
 import BottomNav from "../components/BottomNav";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
+import { fileToDataUrl } from "../lib/upload";
 import { NEIGHBORHOODS } from "../data/items";
 
 const categories = ["Dress", "Shirt", "Pants", "Jacket", "Sweater", "Skirt", "Shoes", "Sneakers", "Accessories"];
 const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
 const conditions = ["New", "Like New", "Good", "Worn"];
-
-// Resize a picked photo down to a small JPEG data URL so it renders fast and
-// fits comfortably in localStorage.
-function fileToDataUrl(file: File, max = 900): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(reader.error);
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error("Could not read image"));
-      img.onload = () => {
-        const scale = Math.min(1, max / Math.max(img.width, img.height));
-        const w = Math.round(img.width * scale);
-        const h = Math.round(img.height * scale);
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return reject(new Error("Canvas unavailable"));
-        ctx.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL("image/jpeg", 0.8));
-      };
-      img.src = reader.result as string;
-    };
-    reader.readAsDataURL(file);
-  });
-}
 
 export default function ListItem() {
   const navigate = useNavigate();
@@ -116,7 +90,7 @@ export default function ListItem() {
       </div>
 
       {/* Form */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 pb-20">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-5 pb-8">
         <div className="bg-white rounded-3xl p-5 shadow-sm space-y-5">
           {/* Title */}
           <div>

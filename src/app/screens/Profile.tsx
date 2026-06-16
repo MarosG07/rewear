@@ -1,15 +1,19 @@
-import { Leaf, Package, TrendingDown, MapPin, Clock, Rocket, Check, LogOut } from "lucide-react";
+import { useState } from "react";
+import { Leaf, Package, TrendingDown, MapPin, Clock, Rocket, Check, LogOut, Pencil, Bell } from "lucide-react";
 import { Link } from "react-router";
 import BottomNav from "../components/BottomNav";
 import SmartImage from "../components/SmartImage";
+import ProfileEditSheet from "../components/ProfileEditSheet";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
 import { listingImage, avatarFor } from "../lib/images";
 
 export default function Profile() {
   const { profile, session, signOut } = useAuth();
-  const { credits, myListings, conversations, ecoStats, boostListing } = useStore();
+  const { credits, myListings, conversations, ecoStats, boostListing, notificationsEnabled, enableNotifications } =
+    useStore();
   const myId = session?.user.id;
+  const [editing, setEditing] = useState(false);
 
   const completedSwaps = conversations.filter((c) => c.status === "completed");
 
@@ -18,7 +22,7 @@ export default function Profile() {
       {/* Grain texture */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=')]"></div>
 
-      <div className="flex-1 overflow-y-auto pb-20">
+      <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
         {/* Profile header */}
         <div className="px-4 pt-5 pb-6">
           <div className="flex items-start gap-4 mb-6">
@@ -32,13 +36,22 @@ export default function Profile() {
                 <h1 className="font-heading text-2xl text-[#3D3530] mb-1">
                   {profile?.name ?? "You"}
                 </h1>
-                <button
-                  onClick={signOut}
-                  className="flex items-center gap-1 text-xs text-[#3D3530]/50 hover:text-[#3D3530] transition-colors mt-1"
-                >
-                  <LogOut className="w-4 h-4" strokeWidth={1.5} />
-                  Sign out
-                </button>
+                <div className="flex items-center gap-3 mt-1 shrink-0">
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="flex items-center gap-1 text-xs text-[#3D3530]/50 hover:text-[#3D3530] transition-colors"
+                  >
+                    <Pencil className="w-4 h-4" strokeWidth={1.5} />
+                    Edit
+                  </button>
+                  <button
+                    onClick={signOut}
+                    className="flex items-center gap-1 text-xs text-[#3D3530]/50 hover:text-[#3D3530] transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" strokeWidth={1.5} />
+                    Sign out
+                  </button>
+                </div>
               </div>
               <div className="flex items-center gap-1 text-[#3D3530]/60 mb-3">
                 <MapPin className="w-4 h-4" strokeWidth={1.5} />
@@ -85,6 +98,24 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {/* Notifications */}
+        {!notificationsEnabled && (
+          <div className="px-4 -mt-2 mb-6">
+            <button
+              onClick={enableNotifications}
+              className="w-full bg-white rounded-2xl px-4 py-3 shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow text-left active:scale-[0.99]"
+            >
+              <div className="w-9 h-9 bg-[#6B7A5C]/15 rounded-full flex items-center justify-center shrink-0">
+                <Bell className="w-4 h-4 text-[#6B7A5C]" strokeWidth={1.5} />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-[#3D3530]">Turn on notifications</p>
+                <p className="text-xs text-[#3D3530]/60">Get pinged when someone messages you</p>
+              </div>
+            </button>
+          </div>
+        )}
 
         {/* Listed items */}
         <div className="px-4 mb-6">
@@ -200,6 +231,7 @@ export default function Profile() {
       </div>
 
       <BottomNav active="profile" />
+      {editing && <ProfileEditSheet onClose={() => setEditing(false)} />}
     </div>
   );
 }

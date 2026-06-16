@@ -23,7 +23,7 @@ export default function Saved() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto pb-20 px-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain pb-8 px-4">
         {savedItems.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-8">
             <div className="w-16 h-16 rounded-full bg-[#E8DDD0] flex items-center justify-center mb-4">

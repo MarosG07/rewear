@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useCallback,
   type ReactNode,
@@ -10,6 +11,7 @@ import {
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import { supabase } from "../lib/supabase";
+import { uploadImage } from "../lib/upload";
 import type { Conversation, Listing } from "../lib/types";
 import { useAuth } from "./AuthContext";
 
@@ -32,15 +34,6 @@ export const ECO = { CO2_PER_SWAP: 2.5, KM_PER_SWAP: 3 } as const;
 const LISTING_SELECT = "*, owner:owner_id(id,name,avatar_url,location)";
 const CONVO_SELECT =
   "*, listing:listing_id(id,name,image_url), requester:requester_id(id,name,avatar_url), owner:owner_id(id,name,avatar_url)";
-
-function dataUrlToBlob(dataUrl: string): Blob {
-  const [head, b64] = dataUrl.split(",");
-  const mime = head.match(/:(.*?);/)?.[1] || "image/jpeg";
-  const bin = atob(b64);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-  return new Blob([arr], { type: mime });
-}
 
 export interface ListInput {
   name: string;
@@ -74,6 +67,11 @@ interface StoreValue {
 
   listItem: (input: ListInput) => Promise<boolean>;
   boostListing: (listingId: string) => Promise<void>;
+  deleteListing: (listingId: string) => Promise<void>;
+  setListingStatus: (listingId: string, status: "active" | "swapped") => Promise<void>;
+
+  notificationsEnabled: boolean;
+  enableNotifications: () => Promise<void>;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -86,6 +84,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [listings, setListings] = useState<Listing[]>([]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    typeof Notification !== "undefined" && Notification.permission === "granted",
+  );
+
+  // Always-fresh snapshot for the realtime notification handler.
+  const conversationsRef = useRef<Conversation[]>([]);
+  conversationsRef.current = conversations;
 
   const credits = profile?.credits ?? 0;
 
@@ -145,6 +150,54 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(channel);
     };
   }, [userId, loadConversations]);
+
+  // Notify on any incoming message (RLS only delivers my conversations').
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel("messages-notify")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
+          const msg = payload.new as { conversation_id: string; sender_id: string; body: string };
+          if (msg.sender_id === userId) return; // ignore my own
+          loadConversations();
+          const convo = conversationsRef.current.find((c) => c.id === msg.conversation_id);
+          const partner = convo
+            ? convo.requester_id === userId
+              ? convo.owner
+              : convo.requester
+            : null;
+          const who = partner?.name ?? "Someone";
+          if (
+            typeof document !== "undefined" &&
+            document.hidden &&
+            typeof Notification !== "undefined" &&
+            Notification.permission === "granted"
+          ) {
+            new Notification(`New message from ${who}`, { body: msg.body, icon: "/pwa-192.png" });
+          } else {
+            toast(`💬 ${who}`, { description: msg.body.slice(0, 60) });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, loadConversations]);
+
+  const enableNotifications = async () => {
+    if (typeof Notification === "undefined") {
+      toast.error("Notifications aren't supported here");
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    setNotificationsEnabled(perm === "granted");
+    if (perm === "granted") toast.success("Notifications on");
+    else toast("Notifications blocked", { description: "Allow them in your browser settings." });
+  };
 
   // ── credit helper ─────────────────────────────────────────────────────
   const changeCredits = async (delta: number, label: string): Promise<boolean> => {
@@ -257,17 +310,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const listItem = async (input: ListInput): Promise<boolean> => {
     let imageUrl: string | null = null;
     if (input.imageDataUrl) {
-      try {
-        const blob = dataUrlToBlob(input.imageDataUrl);
-        const path = `${userId}/${crypto.randomUUID()}.jpg`;
-        const { error: upErr } = await supabase.storage
-          .from("listing-photos")
-          .upload(path, blob, { contentType: "image/jpeg", upsert: false });
-        if (upErr) throw upErr;
-        imageUrl = supabase.storage.from("listing-photos").getPublicUrl(path).data.publicUrl;
-      } catch {
-        toast.error("Photo upload failed", { description: "Listing saved without it." });
-      }
+      imageUrl = await uploadImage(userId, input.imageDataUrl);
+      if (!imageUrl) toast.error("Photo upload failed", { description: "Listing saved without it." });
     }
 
     const { error } = await supabase.from("listings").insert({
@@ -298,6 +342,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!(await changeCredits(-CREDIT_RULES.BOOST, "Boosted a listing"))) return;
     await supabase.from("listings").update({ boosted: true }).eq("id", listingId);
     await loadListings();
+  };
+
+  const deleteListing = async (listingId: string) => {
+    setListings((l) => l.filter((x) => x.id !== listingId)); // optimistic
+    const { error } = await supabase.from("listings").delete().eq("id", listingId);
+    if (error) {
+      toast.error("Couldn't delete listing");
+      await loadListings();
+      return;
+    }
+    toast("Listing removed");
+  };
+
+  const setListingStatus = async (listingId: string, status: "active" | "swapped") => {
+    setListings((l) => l.map((x) => (x.id === listingId ? { ...x, status } : x))); // optimistic
+    const { error } = await supabase.from("listings").update({ status }).eq("id", listingId);
+    if (error) {
+      toast.error("Couldn't update listing");
+      await loadListings();
+      return;
+    }
+    toast(status === "swapped" ? "Marked as swapped" : "Marked as available");
   };
 
   // ── derived ───────────────────────────────────────────────────────────
@@ -333,6 +399,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     rateSwap,
     listItem,
     boostListing,
+    deleteListing,
+    setListingStatus,
+    notificationsEnabled,
+    enableNotifications,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
