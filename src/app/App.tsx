@@ -3,6 +3,7 @@ import { RouterProvider } from "react-router";
 import { Toaster } from "sonner";
 import { router } from "./routes";
 import SplashScreen from "./components/SplashScreen";
+import Onboarding from "./components/Onboarding";
 import Auth from "./screens/Auth";
 import { AuthProvider, useAuth } from "./store/AuthContext";
 import { StoreProvider } from "./store/AppStore";
@@ -36,6 +37,9 @@ export default function App() {
 
 function Shell() {
   const { loading, session } = useAuth();
+  const [onboarded, setOnboarded] = useState(
+    () => typeof localStorage !== "undefined" && localStorage.getItem("rewear-onboarded") === "1",
+  );
 
   // Splash: minimum brand moment, but also held until auth resolves.
   const [minTimePassed, setMinTimePassed] = useState(false);
@@ -64,6 +68,14 @@ function Shell() {
         </StoreProvider>
       ) : (
         !wantSplash && <Auth />
+      )}
+      {session && !onboarded && !wantSplash && (
+        <Onboarding
+          onDone={() => {
+            localStorage.setItem("rewear-onboarded", "1");
+            setOnboarded(true);
+          }}
+        />
       )}
       {renderSplash && <SplashScreen fading={fading} />}
     </>

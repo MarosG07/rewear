@@ -33,7 +33,7 @@ export const ECO = { CO2_PER_SWAP: 2.5, KM_PER_SWAP: 3 } as const;
 
 const LISTING_SELECT = "*, owner:owner_id(id,name,avatar_url,location)";
 const CONVO_SELECT =
-  "*, listing:listing_id(id,name,image_url), requester:requester_id(id,name,avatar_url), owner:owner_id(id,name,avatar_url)";
+  "*, listing:listing_id(id,name,image_url), offered:offered_listing_id(id,name,image_url), requester:requester_id(id,name,avatar_url), owner:owner_id(id,name,avatar_url)";
 
 export interface ListInput {
   name: string;
@@ -42,7 +42,16 @@ export interface ListInput {
   size: string;
   neighborhood: string;
   description?: string;
-  imageDataUrl?: string;
+  imageDataUrls?: string[];
+}
+
+export interface EditInput {
+  name: string;
+  category: string;
+  condition: string;
+  size: string;
+  neighborhood: string;
+  description?: string;
 }
 
 interface StoreValue {
@@ -61,11 +70,14 @@ interface StoreValue {
   toggleSaved: (id: string) => Promise<void>;
 
   hasRequested: (listingId: string) => boolean;
-  requestSwap: (listing: Listing) => Promise<void>;
+  requestSwap: (listing: Listing, offeredListingId?: string) => Promise<void>;
   completeSwap: (conversationId: string) => Promise<void>;
-  rateSwap: (conversationId: string) => Promise<void>;
+  submitReview: (conversationId: string, rating: number, comment: string) => Promise<void>;
+  proposeMeetup: (conversationId: string, when: string, place: string) => Promise<void>;
+  confirmMeetup: (conversationId: string) => Promise<void>;
 
   listItem: (input: ListInput) => Promise<boolean>;
+  updateListing: (listingId: string, input: EditInput, newImageDataUrls?: string[]) => Promise<boolean>;
   boostListing: (listingId: string) => Promise<void>;
   deleteListing: (listingId: string) => Promise<void>;
   setListingStatus: (listingId: string, status: "active" | "swapped") => Promise<void>;
@@ -243,7 +255,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const hasRequested = (listingId: string) =>
     conversations.some((c) => c.listing_id === listingId && c.requester_id === userId);
 
-  const requestSwap = async (listing: Listing) => {
+  const requestSwap = async (listing: Listing, offeredListingId?: string) => {
     if (listing.owner_id === userId) {
       toast("That's your own listing", { description: "You can't swap with yourself." });
       return;
@@ -257,7 +269,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     const { data, error } = await supabase
       .from("conversations")
-      .insert({ listing_id: listing.id, requester_id: userId, owner_id: listing.owner_id })
+      .insert({
+        listing_id: listing.id,
+        requester_id: userId,
+        owner_id: listing.owner_id,
+        offered_listing_id: offeredListingId ?? null,
+      })
       .select("id")
       .single();
     if (error) {
@@ -265,11 +282,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       await changeCredits(CREDIT_RULES.REQUEST_SWAP, "Refund"); // give it back
       return;
     }
-    await supabase.from("messages").insert({
-      conversation_id: data.id,
-      sender_id: userId,
-      body: `Hi! I'd love to swap for your ${listing.name}. 👋`,
-    });
+    const offered = offeredListingId ? listings.find((l) => l.id === offeredListingId) : null;
+    const body = offered
+      ? `Hi! I'd love to swap my ${offered.name} for your ${listing.name}. 👋`
+      : `Hi! I'd love to swap for your ${listing.name}. 👋`;
+    await supabase.from("messages").insert({ conversation_id: data.id, sender_id: userId, body });
     await loadConversations();
   };
 
@@ -294,24 +311,71 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await loadConversations();
   };
 
-  const rateSwap = async (conversationId: string) => {
+  const submitReview = async (conversationId: string, rating: number, comment: string) => {
     const convo = conversations.find((c) => c.id === conversationId);
     if (!convo || convo.rated || convo.status !== "completed") return;
+    const revieweeId = convo.requester_id === userId ? convo.owner_id : convo.requester_id;
+    const { error } = await supabase.from("reviews").insert({
+      conversation_id: conversationId,
+      reviewer_id: userId,
+      reviewee_id: revieweeId,
+      rating,
+      comment: comment.trim() || null,
+    });
+    if (error) {
+      toast.error("Couldn't submit review");
+      return;
+    }
+    await supabase.from("conversations").update({ rated: true }).eq("id", conversationId);
+    await changeCredits(CREDIT_RULES.FIVE_STAR, "Left a review");
+    await loadConversations();
+  };
+
+  const proposeMeetup = async (conversationId: string, when: string, place: string) => {
     const { error } = await supabase
       .from("conversations")
-      .update({ rated: true })
+      .update({ meetup_at: when, meetup_place: place || null, meetup_confirmed: false })
       .eq("id", conversationId);
-    if (error) return;
-    await changeCredits(CREDIT_RULES.FIVE_STAR, "5-star rating given");
+    if (error) {
+      toast.error("Couldn't propose meetup");
+      return;
+    }
+    const nice = new Date(when).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+    await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: userId,
+      body: `📅 Proposed a meetup: ${nice}${place ? ` at ${place}` : ""}`,
+    });
+    await loadConversations();
+  };
+
+  const confirmMeetup = async (conversationId: string) => {
+    const { error } = await supabase
+      .from("conversations")
+      .update({ meetup_confirmed: true, status: "confirmed" })
+      .eq("id", conversationId);
+    if (error) {
+      toast.error("Couldn't confirm meetup");
+      return;
+    }
+    await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: userId,
+      body: "✅ Confirmed the meetup — see you there!",
+    });
+    toast.success("Meetup confirmed");
     await loadConversations();
   };
 
   // ── listings ──────────────────────────────────────────────────────────
   const listItem = async (input: ListInput): Promise<boolean> => {
-    let imageUrl: string | null = null;
-    if (input.imageDataUrl) {
-      imageUrl = await uploadImage(userId, input.imageDataUrl);
-      if (!imageUrl) toast.error("Photo upload failed", { description: "Listing saved without it." });
+    const images: string[] = [];
+    for (const d of input.imageDataUrls ?? []) {
+      const url = await uploadImage(userId, d);
+      if (url) images.push(url);
+    }
+    if ((input.imageDataUrls?.length ?? 0) > 0 && images.length === 0) {
+      toast.error("Photo upload failed", { description: "Listing saved without it." });
     }
 
     const { error } = await supabase.from("listings").insert({
@@ -322,13 +386,48 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       size: input.size,
       neighborhood: input.neighborhood,
       description: input.description ?? null,
-      image_url: imageUrl,
+      image_url: images[0] ?? null,
+      images,
     });
     if (error) {
       toast.error("Couldn't create the listing");
       return false;
     }
     await changeCredits(CREDIT_RULES.LIST_ITEM, `Listed “${input.name}”`);
+    await loadListings();
+    return true;
+  };
+
+  const updateListing = async (
+    listingId: string,
+    input: EditInput,
+    newImageDataUrls?: string[],
+  ): Promise<boolean> => {
+    const patch: Record<string, unknown> = {
+      name: input.name,
+      category: input.category,
+      condition: input.condition,
+      size: input.size,
+      neighborhood: input.neighborhood,
+      description: input.description ?? null,
+    };
+    if (newImageDataUrls && newImageDataUrls.length > 0) {
+      const images: string[] = [];
+      for (const d of newImageDataUrls) {
+        const url = await uploadImage(userId, d);
+        if (url) images.push(url);
+      }
+      if (images.length) {
+        patch.images = images;
+        patch.image_url = images[0];
+      }
+    }
+    const { error } = await supabase.from("listings").update(patch).eq("id", listingId);
+    if (error) {
+      toast.error("Couldn't update listing");
+      return false;
+    }
+    toast.success("Listing updated");
     await loadListings();
     return true;
   };
@@ -396,8 +495,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     hasRequested,
     requestSwap,
     completeSwap,
-    rateSwap,
+    submitReview,
+    proposeMeetup,
+    confirmMeetup,
     listItem,
+    updateListing,
     boostListing,
     deleteListing,
     setListingStatus,

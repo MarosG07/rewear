@@ -65,7 +65,7 @@ export default function ListItem() {
       condition: selectedCondition || "Good",
       size: selectedSize || "One Size",
       neighborhood: selectedNeighborhood || "Ruzafa",
-      imageDataUrl: photos.find(Boolean), // first uploaded photo, if any
+      imageDataUrls: photos.filter(Boolean), // all uploaded photos (first = cover)
     });
     setBusy(false);
     if (ok) navigate("/profile");

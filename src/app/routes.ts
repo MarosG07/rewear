@@ -1,10 +1,12 @@
 import { createBrowserRouter } from "react-router";
 import Home from "./screens/Home";
 import ItemDetail from "./screens/ItemDetail";
+import EditListing from "./screens/EditListing";
 import ListItem from "./screens/ListItem";
 import SwapInbox from "./screens/SwapInbox";
 import Saved from "./screens/Saved";
 import Profile from "./screens/Profile";
+import UserProfile from "./screens/UserProfile";
 
 export const router = createBrowserRouter([
   {
@@ -14,6 +16,10 @@ export const router = createBrowserRouter([
   {
     path: "/item/:id",
     Component: ItemDetail,
+  },
+  {
+    path: "/item/:id/edit",
+    Component: EditListing,
   },
   {
     path: "/list",
@@ -30,5 +36,9 @@ export const router = createBrowserRouter([
   {
     path: "/profile",
     Component: Profile,
+  },
+  {
+    path: "/user/:id",
+    Component: UserProfile,
   },
 ]);

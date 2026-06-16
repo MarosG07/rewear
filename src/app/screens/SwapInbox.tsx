@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Check, Star, MessageSquare, Send } from "lucide-react";
+import { ChevronLeft, Check, Star, MessageSquare, Send, Calendar, Gift, CalendarPlus } from "lucide-react";
 import BottomNav from "../components/BottomNav";
 import { supabase } from "../lib/supabase";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
@@ -9,7 +9,7 @@ import type { Conversation, Message, SwapStatus } from "../lib/types";
 
 const statusLabel: Record<SwapStatus, string> = {
   pending: "Pending",
-  confirmed: "In progress",
+  confirmed: "Meetup set",
   completed: "Completed",
 };
 const statusStyle: Record<SwapStatus, string> = {
@@ -25,29 +25,20 @@ function partnerOf(c: Conversation, myId?: string) {
 export default function SwapInbox() {
   const { session } = useAuth();
   const myId = session?.user.id;
-  const { conversations, completeSwap, rateSwap } = useStore();
+  const { conversations } = useStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const chat = selectedId ? conversations.find((c) => c.id === selectedId) : null;
 
   if (chat) {
-    return (
-      <ChatView
-        key={chat.id}
-        chat={chat}
-        myId={myId}
-        onBack={() => setSelectedId(null)}
-        onComplete={() => completeSwap(chat.id)}
-        onRate={() => rateSwap(chat.id)}
-      />
-    );
+    return <ChatView key={chat.id} chat={chat} myId={myId} onBack={() => setSelectedId(null)} />;
   }
 
   return (
     <div className="h-full flex flex-col bg-[#F5F0E8] relative overflow-hidden">
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=')]"></div>
 
-      <div className="bg-[#F5F0E8]/95 backdrop-blur-sm border-b border-[#3D3530]/10 px-4 py-3.5">
+      <div className="bg-[#F5F0E8]/95 backdrop-blur-sm border-b border-[#3D3530]/10 px-4 py-3.5 shrink-0">
         <h1 className="font-heading text-2xl text-[#3D3530]">Swap inbox</h1>
       </div>
 
@@ -85,18 +76,17 @@ export default function SwapInbox() {
                     />
                   </div>
                   <div className="flex-1 text-left">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="font-medium text-[#3D3530]">{partner?.name ?? "A Rewearer"}</p>
-                    </div>
-                    <p className="text-sm text-[#3D3530]/70 line-clamp-1">
-                      {conv.listing?.name ?? "Swap"}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1.5">
-                      <span
-                        className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyle[conv.status]}`}
-                      >
+                    <p className="font-medium text-[#3D3530]">{partner?.name ?? "A Rewearer"}</p>
+                    <p className="text-sm text-[#3D3530]/70 line-clamp-1">{conv.listing?.name ?? "Swap"}</p>
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyle[conv.status]}`}>
                         {statusLabel[conv.status]}
                       </span>
+                      {conv.offered && (
+                        <span className="text-xs text-[#6B7A5C] flex items-center gap-0.5">
+                          <Gift className="w-3 h-3" strokeWidth={1.5} /> offer
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -111,19 +101,8 @@ export default function SwapInbox() {
   );
 }
 
-function ChatView({
-  chat,
-  myId,
-  onBack,
-  onComplete,
-  onRate,
-}: {
-  chat: Conversation;
-  myId?: string;
-  onBack: () => void;
-  onComplete: () => void;
-  onRate: () => void;
-}) {
+function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; onBack: () => void }) {
+  const { completeSwap, submitReview, proposeMeetup, confirmMeetup } = useStore();
   const partner = partnerOf(chat, myId);
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
@@ -131,7 +110,15 @@ function ChatView({
   const endRef = useRef<HTMLDivElement>(null);
   const isCompleted = chat.status === "completed";
 
-  // Load history + subscribe to live inserts for this conversation.
+  // meetup form
+  const [showMeetup, setShowMeetup] = useState(false);
+  const [meetupWhen, setMeetupWhen] = useState("");
+  const [meetupPlace, setMeetupPlace] = useState("");
+
+  // review form
+  const [rating, setRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+
   useEffect(() => {
     let active = true;
     supabase
@@ -147,12 +134,7 @@ function ChatView({
       .channel(`messages:${chat.id}`)
       .on(
         "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `conversation_id=eq.${chat.id}`,
-        },
+        { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${chat.id}` },
         (payload) => {
           const msg = payload.new as Message;
           setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
@@ -179,18 +161,27 @@ function ChatView({
       .from("messages")
       .insert({ conversation_id: chat.id, sender_id: myId, body });
     setSending(false);
-    if (error) setDraft(body); // restore on failure
+    if (error) setDraft(body);
   };
+
+  const submitMeetup = () => {
+    if (!meetupWhen) return;
+    proposeMeetup(chat.id, new Date(meetupWhen).toISOString(), meetupPlace.trim());
+    setShowMeetup(false);
+    setMeetupWhen("");
+    setMeetupPlace("");
+  };
+
+  const meetupNice = chat.meetup_at
+    ? new Date(chat.meetup_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
+    : null;
 
   return (
     <div className="h-full flex flex-col bg-[#F5F0E8]">
       {/* Header */}
-      <div className="bg-white border-b border-[#3D3530]/10 px-4 py-3.5">
+      <div className="bg-white border-b border-[#3D3530]/10 px-4 py-3.5 shrink-0">
         <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            className="p-2 hover:bg-[#F5F0E8] rounded-full transition-colors"
-          >
+          <button onClick={onBack} className="p-2 hover:bg-[#F5F0E8] rounded-full transition-colors">
             <ChevronLeft className="w-5 h-5 text-[#3D3530]" strokeWidth={1.5} />
           </button>
           <img
@@ -205,8 +196,44 @@ function ChatView({
         </div>
       </div>
 
+      {/* Offered item banner */}
+      {chat.offered && (
+        <div className="bg-[#6B7A5C]/10 px-4 py-2 flex items-center gap-2 text-sm text-[#3D3530] shrink-0">
+          <Gift className="w-4 h-4 text-[#6B7A5C]" strokeWidth={1.5} />
+          <span>
+            Offering in return: <span className="font-medium">{chat.offered.name}</span>
+          </span>
+        </div>
+      )}
+
+      {/* Meetup banner */}
+      {meetupNice && (
+        <div
+          className={`px-4 py-2.5 flex items-center justify-between gap-2 shrink-0 ${
+            chat.meetup_confirmed ? "bg-[#6B7A5C] text-white" : "bg-[#C2794A]/15 text-[#3D3530]"
+          }`}
+        >
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar className="w-4 h-4" strokeWidth={1.5} />
+            <span className="font-medium">
+              {meetupNice}
+              {chat.meetup_place ? ` · ${chat.meetup_place}` : ""}
+            </span>
+          </div>
+          {!chat.meetup_confirmed && !isCompleted && (
+            <button
+              onClick={() => confirmMeetup(chat.id)}
+              className="bg-[#6B7A5C] text-white text-xs font-medium px-3 py-1.5 rounded-full shrink-0"
+            >
+              Confirm
+            </button>
+          )}
+          {chat.meetup_confirmed && <Check className="w-4 h-4" strokeWidth={2} />}
+        </div>
+      )}
+
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-3">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-5 space-y-3">
         {messages.map((m) => {
           const mine = m.sender_id === myId;
           return (
@@ -220,9 +247,7 @@ function ChatView({
               )}
               <div
                 className={`rounded-2xl px-4 py-2.5 shadow-sm max-w-[72%] ${
-                  mine
-                    ? "bg-[#6B7A5C] text-white rounded-tr-sm"
-                    : "bg-white text-[#3D3530] rounded-tl-sm"
+                  mine ? "bg-[#6B7A5C] text-white rounded-tr-sm" : "bg-white text-[#3D3530] rounded-tl-sm"
                 }`}
               >
                 <p className="whitespace-pre-wrap break-words">{m.body}</p>
@@ -230,49 +255,102 @@ function ChatView({
             </div>
           );
         })}
-        {isCompleted && (
-          <div className="flex justify-center pt-1">
-            <span className="bg-[#3D3530]/5 text-[#3D3530]/70 text-sm px-4 py-2 rounded-full">
-              Swap completed 🎉
-            </span>
-          </div>
-        )}
         <div ref={endRef} />
       </div>
 
-      {/* Swap action */}
-      <div className="bg-white border-t border-[#3D3530]/10 px-4 pt-3">
+      {/* Action area */}
+      <div className="bg-white border-t border-[#3D3530]/10 px-4 pt-3 shrink-0">
         {!isCompleted ? (
-          <button
-            onClick={onComplete}
-            className="w-full bg-[#6B7A5C] text-white py-3 rounded-2xl font-medium shadow-sm hover:bg-[#5d6b4f] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-          >
-            <Check className="w-5 h-5" strokeWidth={2} />
-            <span>Mark swap complete</span>
-            <span className="text-white/80 text-sm">+{CREDIT_RULES.COMPLETE_SWAP}</span>
-          </button>
+          <>
+            {showMeetup ? (
+              <div className="bg-[#F5F0E8] rounded-2xl p-3 mb-3 space-y-2">
+                <p className="text-sm font-medium text-[#3D3530]">Propose a meetup</p>
+                <input
+                  type="datetime-local"
+                  value={meetupWhen}
+                  onChange={(e) => setMeetupWhen(e.target.value)}
+                  className="w-full bg-white rounded-xl px-3 py-2 text-sm text-[#3D3530] focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
+                />
+                <input
+                  type="text"
+                  value={meetupPlace}
+                  onChange={(e) => setMeetupPlace(e.target.value)}
+                  placeholder="Place (e.g. Mercado de Ruzafa)"
+                  className="w-full bg-white rounded-xl px-3 py-2 text-sm text-[#3D3530] placeholder-[#3D3530]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={submitMeetup}
+                    disabled={!meetupWhen}
+                    className="flex-1 bg-[#6B7A5C] text-white py-2 rounded-xl text-sm font-medium disabled:opacity-50"
+                  >
+                    Propose
+                  </button>
+                  <button
+                    onClick={() => setShowMeetup(false)}
+                    className="px-4 bg-white text-[#3D3530] py-2 rounded-xl text-sm font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => setShowMeetup(true)}
+                  className="flex-1 bg-[#F5F0E8] text-[#3D3530] py-3 rounded-2xl font-medium flex items-center justify-center gap-2 hover:bg-[#E8DDD0] transition-colors"
+                >
+                  <CalendarPlus className="w-5 h-5 text-[#6B7A5C]" strokeWidth={1.5} />
+                  Meetup
+                </button>
+                <button
+                  onClick={() => completeSwap(chat.id)}
+                  className="flex-1 bg-[#6B7A5C] text-white py-3 rounded-2xl font-medium flex items-center justify-center gap-1.5 hover:bg-[#5d6b4f] transition-all active:scale-[0.98]"
+                >
+                  <Check className="w-5 h-5" strokeWidth={2} />
+                  Complete
+                  <span className="text-white/80 text-xs">+{CREDIT_RULES.COMPLETE_SWAP}</span>
+                </button>
+              </div>
+            )}
+          </>
         ) : !chat.rated ? (
-          <button
-            onClick={onRate}
-            className="w-full bg-[#C2794A] text-white py-3 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-          >
-            <Star className="w-5 h-5 fill-white" strokeWidth={1.5} />
-            <span>Leave a 5-star rating</span>
-            <span className="text-white/80 text-sm">+{CREDIT_RULES.FIVE_STAR}</span>
-          </button>
-        ) : (
-          <div className="w-full bg-[#F5F0E8] text-[#3D3530] py-3 rounded-2xl font-medium flex items-center justify-center gap-2">
-            <div className="flex">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <Star key={i} className="w-4 h-4 text-[#C2794A] fill-[#C2794A]" strokeWidth={1.5} />
+          <div className="bg-[#F5F0E8] rounded-2xl p-3 mb-3">
+            <p className="text-sm font-medium text-[#3D3530] mb-2">Rate this swap</p>
+            <div className="flex gap-1 mb-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <button key={i} onClick={() => setRating(i)}>
+                  <Star
+                    className={`w-7 h-7 ${i <= rating ? "text-[#C2794A] fill-[#C2794A]" : "text-[#3D3530]/25"}`}
+                    strokeWidth={1.5}
+                  />
+                </button>
               ))}
             </div>
-            <span className="text-sm">Thanks for rating!</span>
+            <textarea
+              value={reviewText}
+              onChange={(e) => setReviewText(e.target.value)}
+              rows={2}
+              placeholder={`How was swapping with ${partner?.name ?? "them"}?`}
+              className="w-full bg-white rounded-xl px-3 py-2 text-sm text-[#3D3530] placeholder-[#3D3530]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C] resize-none mb-2"
+            />
+            <button
+              onClick={() => submitReview(chat.id, rating, reviewText)}
+              className="w-full bg-[#C2794A] text-white py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5"
+            >
+              Submit review
+              <span className="text-white/80 text-xs">+{CREDIT_RULES.FIVE_STAR}</span>
+            </button>
+          </div>
+        ) : (
+          <div className="w-full bg-[#F5F0E8] text-[#3D3530] py-2.5 rounded-2xl font-medium flex items-center justify-center gap-2 mb-3 text-sm">
+            <Check className="w-4 h-4 text-[#6B7A5C]" strokeWidth={2} />
+            Swap complete — thanks for the review!
           </div>
         )}
 
         {/* Message input */}
-        <div className="flex gap-2 py-3">
+        <div className="flex gap-2 pb-3">
           <input
             type="text"
             value={draft}
@@ -286,7 +364,7 @@ function ChatView({
           <button
             onClick={send}
             disabled={!draft.trim() || sending}
-            className="bg-[#C2794A] text-white w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 disabled:opacity-50"
+            className="bg-[#C2794A] text-white w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 shrink-0"
           >
             <Send className="w-5 h-5" strokeWidth={1.5} />
           </button>

@@ -19,6 +19,7 @@ export interface Listing {
   neighborhood: string | null;
   description: string | null;
   image_url: string | null;
+  images: string[];
   status: "active" | "swapped";
   boosted: boolean;
   created_at: string;
@@ -34,8 +35,13 @@ export interface Conversation {
   owner_id: string;
   status: SwapStatus;
   rated: boolean;
+  offered_listing_id: string | null;
+  meetup_at: string | null;
+  meetup_place: string | null;
+  meetup_confirmed: boolean;
   created_at: string;
   listing?: Pick<Listing, "id" | "name" | "image_url"> | null;
+  offered?: Pick<Listing, "id" | "name" | "image_url"> | null;
   requester?: Pick<Profile, "id" | "name" | "avatar_url"> | null;
   owner?: Pick<Profile, "id" | "name" | "avatar_url"> | null;
 }
@@ -46,4 +52,15 @@ export interface Message {
   sender_id: string;
   body: string;
   created_at: string;
+}
+
+export interface Review {
+  id: string;
+  conversation_id: string | null;
+  reviewer_id: string;
+  reviewee_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  reviewer?: Pick<Profile, "id" | "name" | "avatar_url"> | null;
 }
