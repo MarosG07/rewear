@@ -13,7 +13,7 @@ import confetti from "canvas-confetti";
 import { supabase } from "../lib/supabase";
 import { uploadImage } from "../lib/upload";
 import { router } from "../routes";
-import type { Conversation, Listing } from "../lib/types";
+import type { Conversation, Listing, WishItem } from "../lib/types";
 import { useAuth } from "./AuthContext";
 
 /**
@@ -74,7 +74,7 @@ interface StoreValue {
   requestSwap: (listing: Listing, offeredListingId?: string) => Promise<void>;
   acceptSwap: (conversationId: string) => Promise<void>;
   declineSwap: (conversationId: string) => Promise<void>;
-  completeSwap: (conversationId: string) => Promise<void>;
+  markComplete: (conversationId: string) => Promise<void>;
   submitReview: (conversationId: string, rating: number, comment: string) => Promise<void>;
   proposeMeetup: (conversationId: string, when: string, place: string) => Promise<void>;
   confirmMeetup: (conversationId: string) => Promise<void>;
@@ -88,18 +88,24 @@ interface StoreValue {
 
   notificationsEnabled: boolean;
   enableNotifications: () => Promise<void>;
+
+  wishlist: WishItem[];
+  myWishes: WishItem[];
+  addWish: (input: { title: string; category?: string; size?: string; neighborhood?: string; note?: string }) => Promise<boolean>;
+  removeWish: (id: string) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const { session, profile, patchProfile } = useAuth();
+  const { session, profile, patchProfile, refreshProfile } = useAuth();
   const userId = session?.user.id ?? "";
 
   const [loading, setLoading] = useState(true);
   const [listings, setListings] = useState<Listing[]>([]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [wishlist, setWishlist] = useState<WishItem[]>([]);
   const [notificationsEnabled, setNotificationsEnabled] = useState(
     typeof Notification !== "undefined" && Notification.permission === "granted",
   );
@@ -135,9 +141,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSavedIds((data ?? []).map((r: { listing_id: string }) => r.listing_id));
   }, [userId]);
 
+  const loadWishlist = useCallback(async () => {
+    const { data } = await supabase
+      .from("wishlist")
+      .select("*, user:user_id(id,name,avatar_url)")
+      .order("created_at", { ascending: false });
+    setWishlist((data as WishItem[]) ?? []);
+  }, []);
+
   const reload = useCallback(async () => {
-    await Promise.all([loadListings(), loadConversations(), loadSaved()]);
-  }, [loadListings, loadConversations, loadSaved]);
+    await Promise.all([loadListings(), loadConversations(), loadSaved(), loadWishlist()]);
+  }, [loadListings, loadConversations, loadSaved, loadWishlist]);
 
   useEffect(() => {
     let active = true;
@@ -179,6 +193,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const msg = payload.new as { conversation_id: string; sender_id: string; body: string };
           if (msg.sender_id === userId) return; // ignore my own
           loadConversations();
+          if (typeof localStorage !== "undefined" && localStorage.getItem("notif.messages") === "off") return;
           const convo = conversationsRef.current.find((c) => c.id === msg.conversation_id);
           const partner = convo
             ? convo.requester_id === userId
@@ -337,29 +352,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await loadConversations();
   };
 
-  const completeSwap = async (conversationId: string) => {
+  // Mutual completion: each side marks complete; the swap only finalizes (and
+  // both get +5, awarded server-side) once both have confirmed.
+  const markComplete = async (conversationId: string) => {
     const convo = conversations.find((c) => c.id === conversationId);
     if (!convo || convo.status === "completed") return;
     if (convo.status === "pending" || convo.status === "declined") {
       toast("Not ready yet", { description: "The owner needs to accept the swap first." });
       return;
     }
-    const { error } = await supabase
-      .from("conversations")
-      .update({ status: "completed" })
-      .eq("id", conversationId);
+    const { data, error } = await supabase.rpc("mark_swap_complete", { conv_id: conversationId });
     if (error) {
-      toast.error("Couldn't complete the swap");
+      toast.error("Couldn't update the swap");
       return;
     }
-    await changeCredits(CREDIT_RULES.COMPLETE_SWAP, "Completed a swap");
-    confetti({
-      particleCount: 80,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ["#C2794A", "#6B7A5C", "#E8DDD0"],
-    });
-    await loadConversations();
+    await Promise.all([loadConversations(), refreshProfile()]);
+    if (data === "completed") {
+      toast.success(`+${CREDIT_RULES.COMPLETE_SWAP} credits`, { description: "Swap completed 🎉" });
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#C2794A", "#6B7A5C", "#E8DDD0"],
+      });
+    } else {
+      toast("Marked complete", { description: "Waiting for the other person to confirm." });
+    }
   };
 
   const submitReview = async (conversationId: string, rating: number, comment: string) => {
@@ -521,6 +539,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await changeCredits(amount, `Purchased ${amount} credits`);
   };
 
+  // ── wishlist ("Looking for") ─────────────────────────────────────────────
+  const myWishes = useMemo(() => wishlist.filter((w) => w.user_id === userId), [wishlist, userId]);
+
+  const addWish: StoreValue["addWish"] = async (input) => {
+    if (!input.title.trim()) {
+      toast.error("Add a title");
+      return false;
+    }
+    const { error } = await supabase.from("wishlist").insert({
+      user_id: userId,
+      title: input.title.trim(),
+      category: input.category ?? null,
+      size: input.size ?? null,
+      neighborhood: input.neighborhood ?? null,
+      note: input.note?.trim() || null,
+    });
+    if (error) {
+      toast.error("Couldn't add to your wishlist");
+      return false;
+    }
+    toast.success("Added to your wishlist");
+    await loadWishlist();
+    return true;
+  };
+
+  const removeWish = async (id: string) => {
+    setWishlist((w) => w.filter((x) => x.id !== id));
+    await supabase.from("wishlist").delete().eq("id", id);
+  };
+
   // ── derived ───────────────────────────────────────────────────────────
   const completedSwaps = useMemo(
     () => conversations.filter((c) => c.status === "completed").length,
@@ -552,7 +600,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     requestSwap,
     acceptSwap,
     declineSwap,
-    completeSwap,
+    markComplete,
     submitReview,
     proposeMeetup,
     confirmMeetup,
@@ -564,6 +612,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setListingStatus,
     notificationsEnabled,
     enableNotifications,
+    wishlist,
+    myWishes,
+    addWish,
+    removeWish,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

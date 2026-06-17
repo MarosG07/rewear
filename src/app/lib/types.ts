@@ -35,6 +35,8 @@ export interface Conversation {
   owner_id: string;
   status: SwapStatus;
   rated: boolean;
+  requester_completed: boolean;
+  owner_completed: boolean;
   offered_listing_id: string | null;
   meetup_at: string | null;
   meetup_place: string | null;
@@ -52,6 +54,18 @@ export interface Message {
   sender_id: string;
   body: string;
   created_at: string;
+}
+
+export interface WishItem {
+  id: string;
+  user_id: string;
+  title: string;
+  category: string | null;
+  size: string | null;
+  neighborhood: string | null;
+  note: string | null;
+  created_at: string;
+  user?: Pick<Profile, "id" | "name" | "avatar_url"> | null;
 }
 
 export interface Review {

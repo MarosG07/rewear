@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { Leaf, Package, TrendingDown, MapPin, Clock, Rocket, Check, LogOut, Pencil, Bell, Plus } from "lucide-react";
+import { Leaf, Package, TrendingDown, MapPin, Clock, Rocket, Check, Pencil, Bell, Plus, Settings as SettingsIcon, Search } from "lucide-react";
 import { Link } from "react-router";
 import BottomNav from "../components/BottomNav";
 import SmartImage from "../components/SmartImage";
 import ProfileEditSheet from "../components/ProfileEditSheet";
+import AnimatedNumber from "../components/AnimatedNumber";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
 import { listingImage, avatarFor } from "../lib/images";
 
 export default function Profile() {
-  const { profile, session, signOut } = useAuth();
+  const { profile, session } = useAuth();
   const { credits, myListings, conversations, ecoStats, boostListing, notificationsEnabled, enableNotifications } =
     useStore();
   const myId = session?.user.id;
@@ -44,13 +45,13 @@ export default function Profile() {
                     <Pencil className="w-4 h-4" strokeWidth={1.5} />
                     Edit
                   </button>
-                  <button
-                    onClick={signOut}
+                  <Link
+                    to="/settings"
                     className="flex items-center gap-1 text-xs text-[#3D3530]/50 hover:text-[#3D3530] transition-colors"
                   >
-                    <LogOut className="w-4 h-4" strokeWidth={1.5} />
-                    Sign out
-                  </button>
+                    <SettingsIcon className="w-4 h-4" strokeWidth={1.5} />
+                    Settings
+                  </Link>
                 </div>
               </div>
               <div className="flex items-center gap-1 text-[#3D3530]/60 mb-3">
@@ -62,7 +63,9 @@ export default function Profile() {
                 className="bg-gradient-to-r from-[#C2794A] to-[#b36d3f] text-white pl-4 pr-2.5 py-2 rounded-full inline-flex items-center gap-2 shadow-sm hover:opacity-95 active:scale-[0.98] transition-all"
               >
                 <Leaf className="w-4 h-4" strokeWidth={1.5} />
-                <span className="font-medium tabular-nums">{credits} swap credits</span>
+                <span className="font-medium tabular-nums">
+                  <AnimatedNumber value={credits} /> swap credits
+                </span>
                 <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
                   <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
                 </span>
@@ -103,6 +106,22 @@ export default function Profile() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Looking for */}
+        <div className="px-4 -mt-2 mb-3">
+          <Link
+            to="/wishlist"
+            className="w-full bg-white rounded-2xl px-4 py-3 shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow active:scale-[0.99]"
+          >
+            <div className="w-9 h-9 bg-[#C2794A]/12 rounded-full flex items-center justify-center shrink-0">
+              <Search className="w-4 h-4 text-[#C2794A]" strokeWidth={1.5} />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-[#3D3530]">Looking for something?</p>
+              <p className="text-xs text-[#3D3530]/60">Post a wish — neighbors can offer it</p>
+            </div>
+          </Link>
         </div>
 
         {/* Notifications */}

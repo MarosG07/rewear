@@ -5,6 +5,7 @@ import SmartImage from "../components/SmartImage";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
 import { listingImage, avatarFor } from "../lib/images";
+import { haptic } from "../lib/haptics";
 
 export default function ItemDetail() {
   const navigate = useNavigate();
@@ -192,7 +193,10 @@ export default function ItemDetail() {
                 </button>
               )}
               <button
-                onClick={() => toggleSaved(item.id)}
+                onClick={() => {
+                  haptic();
+                  toggleSaved(item.id);
+                }}
                 className={`w-full py-4 rounded-2xl font-medium border transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
                   saved
                     ? "bg-white text-[#C2794A] border-[#C2794A]/30"
@@ -200,7 +204,8 @@ export default function ItemDetail() {
                 }`}
               >
                 <Heart
-                  className={`w-5 h-5 ${saved ? "fill-[#C2794A] text-[#C2794A]" : ""}`}
+                  key={saved ? "on" : "off"}
+                  className={`w-5 h-5 ${saved ? "fill-[#C2794A] text-[#C2794A] animate-pop" : ""}`}
                   strokeWidth={1.5}
                 />
                 {saved ? "Saved" : "Save item"}

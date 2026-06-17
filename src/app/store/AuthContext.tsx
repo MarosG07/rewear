@@ -22,6 +22,9 @@ interface AuthValue {
   updateProfile: (
     fields: Partial<Pick<Profile, "name" | "location" | "avatar_url">>,
   ) => Promise<string | null>;
+  changePassword: (newPassword: string) => Promise<string | null>;
+  changeEmail: (newEmail: string) => Promise<string | null>;
+  deleteAccount: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -115,9 +118,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   };
 
+  const changePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return error ? error.message : null;
+  };
+
+  const changeEmail = async (newEmail: string) => {
+    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    return error ? error.message : null;
+  };
+
+  const deleteAccount = async () => {
+    const { error } = await supabase.rpc("delete_my_account");
+    if (error) return error.message;
+    await supabase.auth.signOut();
+    setProfile(null);
+    setSession(null);
+    return null;
+  };
+
   return (
     <AuthContext.Provider
-      value={{ session, profile, loading, signUp, signIn, signOut, patchProfile, refreshProfile, updateProfile }}
+      value={{ session, profile, loading, signUp, signIn, signOut, patchProfile, refreshProfile, updateProfile, changePassword, changeEmail, deleteAccount }}
     >
       {children}
     </AuthContext.Provider>

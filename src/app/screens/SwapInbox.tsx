@@ -109,9 +109,10 @@ export default function SwapInbox() {
 
 function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; onBack: () => void }) {
   const navigate = useNavigate();
-  const { acceptSwap, declineSwap, completeSwap, proposeMeetup, confirmMeetup } = useStore();
+  const { acceptSwap, declineSwap, markComplete, proposeMeetup, confirmMeetup } = useStore();
   const partner = partnerOf(chat, myId);
   const isOwner = chat.owner_id === myId;
+  const iCompleted = chat.requester_id === myId ? chat.requester_completed : chat.owner_completed;
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -322,13 +323,20 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
               <CalendarPlus className="w-5 h-5 text-[#6B7A5C]" strokeWidth={1.5} />
               {meetupNice ? "Reschedule" : "Arrange meetup"}
             </button>
-            <button
-              onClick={() => completeSwap(chat.id)}
-              className="flex-1 bg-[#6B7A5C] text-white py-3 rounded-2xl font-medium flex items-center justify-center gap-1.5 hover:bg-[#5d6b4f] transition-all active:scale-[0.98]"
-            >
-              <Check className="w-5 h-5" strokeWidth={2} />
-              Complete
-            </button>
+            {iCompleted ? (
+              <div className="flex-1 bg-[#6B7A5C]/12 text-[#6B7A5C] py-3 rounded-2xl font-medium flex items-center justify-center gap-1.5 text-sm text-center px-2">
+                <Check className="w-4 h-4 shrink-0" strokeWidth={2} />
+                Waiting for {partner?.name?.split(" ")[0] ?? "them"}
+              </div>
+            ) : (
+              <button
+                onClick={() => markComplete(chat.id)}
+                className="flex-1 bg-[#6B7A5C] text-white py-3 rounded-2xl font-medium flex items-center justify-center gap-1.5 hover:bg-[#5d6b4f] transition-all active:scale-[0.98]"
+              >
+                <Check className="w-5 h-5" strokeWidth={2} />
+                Mark complete
+              </button>
+            )}
           </div>
         )}
 

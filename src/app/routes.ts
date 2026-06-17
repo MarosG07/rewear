@@ -9,6 +9,8 @@ import Profile from "./screens/Profile";
 import UserProfile from "./screens/UserProfile";
 import RateSwap from "./screens/RateSwap";
 import Credits from "./screens/Credits";
+import Settings from "./screens/Settings";
+import Wishlist from "./screens/Wishlist";
 
 export const router = createBrowserRouter([
   {
@@ -50,5 +52,13 @@ export const router = createBrowserRouter([
   {
     path: "/credits",
     Component: Credits,
+  },
+  {
+    path: "/settings",
+    Component: Settings,
+  },
+  {
+    path: "/wishlist",
+    Component: Wishlist,
   },
 ]);

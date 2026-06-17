@@ -5,8 +5,10 @@ import BottomNav from "../components/BottomNav";
 import Logo from "../components/Logo";
 import SmartImage from "../components/SmartImage";
 import MapView from "../components/MapView";
+import AnimatedNumber from "../components/AnimatedNumber";
 import { useStore } from "../store/AppStore";
 import { listingImage, avatarFor } from "../lib/images";
+import { haptic } from "../lib/haptics";
 import { NEIGHBORHOODS } from "../data/items";
 
 const CATEGORIES = ["Dress", "Shirt", "Pants", "Jacket", "Sweater", "Skirt", "Shoes", "Sneakers", "Accessories", "Coat", "Scarf", "Bag"];
@@ -105,7 +107,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 bg-gradient-to-r from-[#C2794A] to-[#b36d3f] text-white pl-2.5 pr-3 py-1.5 rounded-full shadow-sm">
               <Leaf className="w-3.5 h-3.5" strokeWidth={1.5} />
-              <span className="text-xs font-medium tabular-nums">{credits}</span>
+              <AnimatedNumber value={credits} className="text-xs font-medium tabular-nums" />
             </div>
             <button
               onClick={refresh}
@@ -255,13 +257,15 @@ export default function Home() {
                       <button
                         onClick={(e) => {
                           e.preventDefault();
+                          haptic();
                           toggleSaved(item.id);
                         }}
                         aria-label={saved ? "Remove from saved" : "Save item"}
                         className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-transform"
                       >
                         <Heart
-                          className={`w-4 h-4 ${saved ? "text-[#C2794A] fill-[#C2794A]" : "text-[#3D3530]"}`}
+                          key={saved ? "on" : "off"}
+                          className={`w-4 h-4 ${saved ? "text-[#C2794A] fill-[#C2794A] animate-pop" : "text-[#3D3530]"}`}
                           strokeWidth={1.5}
                         />
                       </button>
