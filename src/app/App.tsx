@@ -64,13 +64,19 @@ function Shell() {
   const [minTimePassed, setMinTimePassed] = useState(false);
   const [renderSplash, setRenderSplash] = useState(true);
   const [fading, setFading] = useState(false);
+  const [hardStop, setHardStop] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setMinTimePassed(true), 2200);
-    return () => clearTimeout(t);
+    // Absolute backstop: the splash must never live past this, even if auth hangs.
+    const stop = setTimeout(() => setHardStop(true), 7000);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(stop);
+    };
   }, []);
 
-  const wantSplash = loading || !minTimePassed;
+  const wantSplash = (loading || !minTimePassed) && !hardStop;
   useEffect(() => {
     if (!wantSplash) {
       setFading(true);

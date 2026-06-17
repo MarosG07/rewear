@@ -47,21 +47,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!active) return;
-      setSession(data.session);
-      if (data.session) setProfile(await fetchProfile(data.session.user.id));
-      setLoading(false);
-    });
+    // Failsafe: never keep the splash up more than 5s waiting on auth — if a
+    // session check or profile fetch stalls, fall through and show the app.
+    const failsafe = setTimeout(() => {
+      if (active) setLoading(false);
+    }, 5000);
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, sess) => {
+    const loadProfile = async (sess: Session | null) => {
+      if (!active) return;
+      if (sess) {
+        const p = await fetchProfile(sess.user.id);
+        if (active) setProfile(p);
+      } else {
+        setProfile(null);
+      }
+    };
+
+    // onAuthStateChange fires INITIAL_SESSION on subscribe (from storage), which
+    // is the reliable unblock signal — even if getSession() itself stalls. We
+    // clear `loading` immediately and load the profile without blocking it.
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, sess) => {
       if (!active) return;
       setSession(sess);
-      setProfile(sess ? await fetchProfile(sess.user.id) : null);
+      setLoading(false);
+      clearTimeout(failsafe);
+      void loadProfile(sess);
     });
 
     return () => {
       active = false;
+      clearTimeout(failsafe);
       sub.subscription.unsubscribe();
     };
   }, []);
