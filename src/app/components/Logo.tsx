@@ -1,4 +1,4 @@
-import { Leaf } from "lucide-react";
+import logoMark from "../../assets/logo-mark.svg";
 
 interface LogoProps {
   size?: "small" | "medium" | "large";
@@ -7,22 +7,18 @@ interface LogoProps {
 
 export default function Logo({ size = "medium", showText = true }: LogoProps) {
   const sizes = {
-    small: { container: "w-7 h-7", icon: "w-4 h-4", text: "text-lg", gap: "gap-2", rounded: "rounded-xl" },
-    medium: { container: "w-10 h-10", icon: "w-6 h-6", text: "text-3xl", gap: "gap-3", rounded: "rounded-2xl" },
-    large: { container: "w-16 h-16", icon: "w-10 h-10", text: "text-5xl", gap: "gap-3", rounded: "rounded-2xl" },
+    small: { mark: "w-8 h-8", text: "text-lg", gap: "gap-2" },
+    medium: { mark: "w-11 h-11", text: "text-3xl", gap: "gap-2.5" },
+    large: { mark: "w-20 h-20", text: "text-5xl", gap: "gap-3" },
   };
 
   const currentSize = sizes[size];
 
   return (
     <div className={`flex items-center ${currentSize.gap}`}>
-      <div className={`${currentSize.container} bg-gradient-to-br from-[#C2794A] to-[#b36d3f] ${currentSize.rounded} flex items-center justify-center shadow-sm`}>
-        <Leaf className={`${currentSize.icon} text-white`} strokeWidth={2} />
-      </div>
+      <img src={logoMark} alt="Rewear" className={`${currentSize.mark} object-contain shrink-0`} />
       {showText && (
-        <span className={`font-heading ${currentSize.text} text-[var(--rw-ink)]`}>
-          Rewear
-        </span>
+        <span className={`font-heading ${currentSize.text} text-[var(--rw-ink)]`}>Rewear</span>
       )}
     </div>
   );
