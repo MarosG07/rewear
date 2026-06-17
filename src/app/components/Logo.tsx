@@ -20,7 +20,7 @@ export default function Logo({ size = "medium", showText = true }: LogoProps) {
         <Leaf className={`${currentSize.icon} text-white`} strokeWidth={2} />
       </div>
       {showText && (
-        <span className={`font-heading ${currentSize.text} text-[#3D3530]`}>
+        <span className={`font-heading ${currentSize.text} text-[var(--rw-ink)]`}>
           Rewear
         </span>
       )}

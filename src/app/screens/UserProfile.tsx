@@ -47,19 +47,19 @@ export default function UserProfile() {
   const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
 
   return (
-    <div className="h-full flex flex-col bg-[#F5F0E8] relative overflow-hidden">
-      <div className="bg-white border-b border-[#3D3530]/10 px-4 py-3.5 flex items-center gap-3 shrink-0">
-        <button onClick={() => navigate(-1)} className="p-2 hover:bg-[#F5F0E8] rounded-full transition-colors">
-          <ChevronLeft className="w-5 h-5 text-[#3D3530]" strokeWidth={1.5} />
+    <div className="h-full flex flex-col bg-[var(--rw-bg)] relative overflow-hidden">
+      <div className="bg-[var(--rw-card)] border-b border-[var(--rw-ink)]/10 px-4 py-3.5 flex items-center gap-3 shrink-0">
+        <button onClick={() => navigate(-1)} className="p-2 hover:bg-[var(--rw-bg)] rounded-full transition-colors">
+          <ChevronLeft className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
         </button>
-        <h1 className="font-heading text-xl text-[#3D3530]">Profile</h1>
+        <h1 className="font-heading text-xl text-[var(--rw-ink)]">Profile</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
         {loading ? (
-          <div className="flex items-center justify-center h-40 text-[#3D3530]/50">Loading…</div>
+          <div className="flex items-center justify-center h-40 text-[var(--rw-ink)]/50">Loading…</div>
         ) : !profile ? (
-          <div className="flex items-center justify-center h-40 text-[#3D3530]/50">User not found</div>
+          <div className="flex items-center justify-center h-40 text-[var(--rw-ink)]/50">User not found</div>
         ) : (
           <>
             {/* Header */}
@@ -71,21 +71,21 @@ export default function UserProfile() {
                   className="w-20 h-20 rounded-full shadow-sm"
                 />
                 <div className="flex-1">
-                  <h2 className="font-heading text-2xl text-[#3D3530] mb-1">{profile.name}</h2>
-                  <div className="flex items-center gap-1 text-[#3D3530]/60 mb-1.5">
+                  <h2 className="font-heading text-2xl text-[var(--rw-ink)] mb-1">{profile.name}</h2>
+                  <div className="flex items-center gap-1 text-[var(--rw-ink)]/60 mb-1.5">
                     <MapPin className="w-4 h-4" strokeWidth={1.5} />
                     <span className="text-sm">{profile.location}</span>
                   </div>
                   {reviews.length > 0 ? (
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-[#C2794A] fill-[#C2794A]" strokeWidth={1.5} />
-                      <span className="text-sm text-[#3D3530] font-medium">{avg.toFixed(1)}</span>
-                      <span className="text-sm text-[#3D3530]/60">
+                      <span className="text-sm text-[var(--rw-ink)] font-medium">{avg.toFixed(1)}</span>
+                      <span className="text-sm text-[var(--rw-ink)]/60">
                         · {reviews.length} review{reviews.length === 1 ? "" : "s"}
                       </span>
                     </div>
                   ) : (
-                    <span className="text-sm text-[#3D3530]/50">No reviews yet</span>
+                    <span className="text-sm text-[var(--rw-ink)]/50">No reviews yet</span>
                   )}
                 </div>
               </div>
@@ -93,14 +93,14 @@ export default function UserProfile() {
 
             {/* Their listings */}
             <div className="px-4 mb-6">
-              <h3 className="font-heading text-lg text-[#3D3530] mb-3">Listings</h3>
+              <h3 className="font-heading text-lg text-[var(--rw-ink)] mb-3">Listings</h3>
               {listings.length === 0 ? (
-                <p className="text-sm text-[#3D3530]/60">No active listings.</p>
+                <p className="text-sm text-[var(--rw-ink)]/60">No active listings.</p>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {listings.map((item) => (
                     <Link key={item.id} to={`/item/${item.id}`}>
-                      <div className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div className="bg-[var(--rw-card)] rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                         <div className="aspect-[3/4] relative overflow-hidden">
                           <SmartImage
                             src={listingImage(item.image_url)}
@@ -109,8 +109,8 @@ export default function UserProfile() {
                           />
                         </div>
                         <div className="px-3 py-2.5">
-                          <p className="text-sm font-medium text-[#3D3530] line-clamp-1">{item.name}</p>
-                          <p className="text-xs text-[#3D3530]/60 line-clamp-1">
+                          <p className="text-sm font-medium text-[var(--rw-ink)] line-clamp-1">{item.name}</p>
+                          <p className="text-xs text-[var(--rw-ink)]/60 line-clamp-1">
                             {[item.condition, item.neighborhood].filter(Boolean).join(" · ")}
                           </p>
                         </div>
@@ -124,30 +124,30 @@ export default function UserProfile() {
             {/* Reviews */}
             {reviews.length > 0 && (
               <div className="px-4">
-                <h3 className="font-heading text-lg text-[#3D3530] mb-3">Reviews</h3>
+                <h3 className="font-heading text-lg text-[var(--rw-ink)] mb-3">Reviews</h3>
                 <div className="space-y-3">
                   {reviews.map((rev) => (
-                    <div key={rev.id} className="bg-white rounded-2xl p-4 shadow-sm">
+                    <div key={rev.id} className="bg-[var(--rw-card)] rounded-2xl p-4 shadow-sm">
                       <div className="flex items-center gap-3 mb-2">
                         <img
                           src={avatarFor(rev.reviewer?.name, rev.reviewer?.avatar_url)}
                           alt={rev.reviewer?.name ?? "Reviewer"}
                           className="w-8 h-8 rounded-full"
                         />
-                        <span className="text-sm font-medium text-[#3D3530] flex-1">
+                        <span className="text-sm font-medium text-[var(--rw-ink)] flex-1">
                           {rev.reviewer?.name ?? "A Rewearer"}
                         </span>
                         <div className="flex">
                           {[1, 2, 3, 4, 5].map((i) => (
                             <Star
                               key={i}
-                              className={`w-3.5 h-3.5 ${i <= rev.rating ? "text-[#C2794A] fill-[#C2794A]" : "text-[#3D3530]/20"}`}
+                              className={`w-3.5 h-3.5 ${i <= rev.rating ? "text-[#C2794A] fill-[#C2794A]" : "text-[var(--rw-ink)]/20"}`}
                               strokeWidth={1.5}
                             />
                           ))}
                         </div>
                       </div>
-                      {rev.comment && <p className="text-sm text-[#3D3530]/80">{rev.comment}</p>}
+                      {rev.comment && <p className="text-sm text-[var(--rw-ink)]/80">{rev.comment}</p>}
                     </div>
                   ))}
                 </div>

@@ -10,7 +10,7 @@ import Logo from "./Logo";
 export default function SplashScreen({ fading = false }: { fading?: boolean }) {
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#F5F0E8] transition-opacity duration-500 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-[var(--rw-bg)] transition-opacity duration-500 ${
         fading ? "opacity-0" : "opacity-100"
       }`}
     >
@@ -37,7 +37,7 @@ export default function SplashScreen({ fading = false }: { fading?: boolean }) {
             delay: 0.4,
             duration: 0.5,
           }}
-          className="text-center mt-4 text-[#3D3530]/60 text-sm tracking-wide"
+          className="text-center mt-4 text-[var(--rw-ink)]/60 text-sm tracking-wide"
         >
           Circular fashion, locally
         </motion.p>

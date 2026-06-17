@@ -33,8 +33,8 @@ export default function App() {
       {/* On phones the app is locked to the viewport (only inner content
           scrolls, so the address bar doesn't toggle and resize things); from
           `sm` up it sits inside the centered device frame for desktop. */}
-      <div className="h-[var(--app-h,100dvh)] overflow-hidden bg-[#E8DDD0] sm:h-auto sm:min-h-[100dvh] sm:overflow-visible sm:flex sm:items-center sm:justify-center sm:py-4 sm:px-4">
-        <div className="relative w-full h-[var(--app-h,100dvh)] bg-white overflow-hidden sm:h-[calc(100dvh-2rem)] sm:max-w-[390px] sm:max-h-[844px] sm:mx-auto sm:rounded-[40px] sm:shadow-2xl">
+      <div className="h-[var(--app-h,100dvh)] overflow-hidden bg-[var(--rw-bg2)] sm:h-auto sm:min-h-[100dvh] sm:overflow-visible sm:flex sm:items-center sm:justify-center sm:py-4 sm:px-4">
+        <div className="relative w-full h-[var(--app-h,100dvh)] bg-[var(--rw-card)] overflow-hidden sm:h-[calc(100dvh-2rem)] sm:max-w-[390px] sm:max-h-[844px] sm:mx-auto sm:rounded-[40px] sm:shadow-2xl">
           <Shell />
         </div>
       </div>

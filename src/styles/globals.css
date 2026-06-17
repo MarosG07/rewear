@@ -1,3 +1,22 @@
+/* ── Theme tokens (light defaults = current palette; .dark overrides) ── */
+:root {
+  --rw-bg: #f5f0e8;    /* screen background (cream) */
+  --rw-bg2: #e8ddd0;   /* secondary surface / chips / skeletons */
+  --rw-ink: #3d3530;   /* primary text (espresso) */
+  --rw-card: #ffffff;  /* cards / sheets */
+}
+.dark {
+  --rw-bg: #16120f;
+  --rw-bg2: #241e18;
+  --rw-ink: #ece3d6;
+  --rw-card: #211c16;
+}
+
+html,
+body {
+  background: var(--rw-bg2);
+}
+
 /* Micro-interaction keyframes */
 @keyframes rw-pop {
   0% { transform: scale(1); }
@@ -14,4 +33,13 @@
 }
 .animate-fade-up {
   animation: rw-fade-up 0.3s ease both;
+}
+
+/* Page transition (route change) */
+@keyframes rw-page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-page {
+  animation: rw-page-in 0.28s ease both;
 }

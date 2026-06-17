@@ -93,6 +93,9 @@ interface StoreValue {
   myWishes: WishItem[];
   addWish: (input: { title: string; category?: string; size?: string; neighborhood?: string; note?: string }) => Promise<boolean>;
   removeWish: (id: string) => Promise<void>;
+
+  dailyCheckin: () => Promise<{ claimed: boolean; streak: number; bonus: number } | null>;
+  redeemReferral: (code: string) => Promise<{ ok: boolean; msg: string } | null>;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -569,6 +572,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await supabase.from("wishlist").delete().eq("id", id);
   };
 
+  // ── retention ────────────────────────────────────────────────────────────
+  const dailyCheckin: StoreValue["dailyCheckin"] = async () => {
+    const { data, error } = await supabase.rpc("daily_checkin");
+    if (error) {
+      toast.error("Couldn't check in");
+      return null;
+    }
+    await refreshProfile();
+    return data as { claimed: boolean; streak: number; bonus: number };
+  };
+
+  const redeemReferral: StoreValue["redeemReferral"] = async (code) => {
+    const { data, error } = await supabase.rpc("redeem_referral", { code });
+    if (error) {
+      toast.error("Couldn't redeem that code");
+      return null;
+    }
+    await refreshProfile();
+    return data as { ok: boolean; msg: string };
+  };
+
   // ── derived ───────────────────────────────────────────────────────────
   const completedSwaps = useMemo(
     () => conversations.filter((c) => c.status === "completed").length,
@@ -616,6 +640,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     myWishes,
     addWish,
     removeWish,
+    dailyCheckin,
+    redeemReferral,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

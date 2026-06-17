@@ -16,7 +16,7 @@ const CONDITIONS = ["New", "Like New", "Good", "Worn"];
 
 const chipCls = (active: boolean) =>
   `px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-    active ? "bg-[#6B7A5C] text-white shadow-sm" : "bg-white text-[#3D3530] hover:bg-[#E8DDD0]"
+    active ? "bg-[#6B7A5C] text-white shadow-sm" : "bg-[var(--rw-card)] text-[var(--rw-ink)] hover:bg-[var(--rw-bg2)]"
   }`;
 
 function FilterRow({
@@ -32,7 +32,7 @@ function FilterRow({
 }) {
   return (
     <div className="mb-4">
-      <p className="text-sm font-medium text-[#3D3530] mb-2">{label}</p>
+      <p className="text-sm font-medium text-[var(--rw-ink)] mb-2">{label}</p>
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => onChange("")} className={chipCls(value === "")}>
           All
@@ -90,18 +90,18 @@ export default function Home() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#F5F0E8] relative overflow-hidden isolate">
+    <div className="h-full flex flex-col bg-[var(--rw-bg)] relative overflow-hidden isolate">
       {/* Grain texture overlay */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=')]"></div>
 
       {/* Top Bar */}
-      <div className="sticky top-0 z-10 bg-[#F5F0E8]/95 backdrop-blur-sm border-b border-[#3D3530]/10 px-4 py-3.5">
+      <div className="sticky top-0 z-10 bg-[var(--rw-bg)]/95 backdrop-blur-sm border-b border-[var(--rw-ink)]/10 px-4 py-3.5">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <Logo size="small" showText={true} />
             <div className="flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-[#6B7A5C]" strokeWidth={1.5} />
-              <span className="text-[#3D3530] text-xs">Valencia, Spain</span>
+              <span className="text-[var(--rw-ink)] text-xs">Valencia, Spain</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -113,15 +113,15 @@ export default function Home() {
               onClick={refresh}
               disabled={refreshing}
               aria-label="Refresh"
-              className="p-2 rounded-full hover:bg-[#E8DDD0] transition-colors"
+              className="p-2 rounded-full hover:bg-[var(--rw-bg2)] transition-colors"
             >
-              <RotateCw className={`w-5 h-5 text-[#3D3530] ${refreshing ? "animate-spin" : ""}`} strokeWidth={1.5} />
+              <RotateCw className={`w-5 h-5 text-[var(--rw-ink)] ${refreshing ? "animate-spin" : ""}`} strokeWidth={1.5} />
             </button>
             <button
               onClick={() => setShowSearch((s) => !s)}
-              className={`p-2 rounded-full transition-colors ${showSearch ? "bg-[#E8DDD0]" : "hover:bg-[#E8DDD0]"}`}
+              className={`p-2 rounded-full transition-colors ${showSearch ? "bg-[var(--rw-bg2)]" : "hover:bg-[var(--rw-bg2)]"}`}
             >
-              <Search className="w-5 h-5 text-[#3D3530]" strokeWidth={1.5} />
+              <Search className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
             </button>
           </div>
         </div>
@@ -132,8 +132,8 @@ export default function Home() {
             onClick={() => setViewMode("grid")}
             className={`flex-1 py-2 px-4 rounded-2xl transition-all ${
               viewMode === "grid"
-                ? "bg-white shadow-sm text-[#3D3530]"
-                : "bg-transparent text-[#3D3530]/60"
+                ? "bg-[var(--rw-card)] shadow-sm text-[var(--rw-ink)]"
+                : "bg-transparent text-[var(--rw-ink)]/60"
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -145,8 +145,8 @@ export default function Home() {
             onClick={() => setViewMode("map")}
             className={`flex-1 py-2 px-4 rounded-2xl transition-all ${
               viewMode === "map"
-                ? "bg-white shadow-sm text-[#3D3530]"
-                : "bg-transparent text-[#3D3530]/60"
+                ? "bg-[var(--rw-card)] shadow-sm text-[var(--rw-ink)]"
+                : "bg-transparent text-[var(--rw-ink)]/60"
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -161,7 +161,7 @@ export default function Home() {
           <div className="flex gap-2 mt-3">
             <div className="flex-1 relative">
               <Search
-                className="w-4 h-4 text-[#3D3530]/40 absolute left-3 top-1/2 -translate-y-1/2"
+                className="w-4 h-4 text-[var(--rw-ink)]/40 absolute left-3 top-1/2 -translate-y-1/2"
                 strokeWidth={1.5}
               />
               <input
@@ -169,12 +169,12 @@ export default function Home() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search items, categories…"
-                className="w-full bg-white rounded-2xl pl-9 pr-3 py-2.5 text-sm text-[#3D3530] placeholder-[#3D3530]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
+                className="w-full bg-[var(--rw-card)] rounded-2xl pl-9 pr-3 py-2.5 text-sm text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
               />
             </div>
             <button
               onClick={() => setFilterOpen(true)}
-              className="relative px-3.5 bg-white rounded-2xl flex items-center justify-center text-[#3D3530] hover:bg-[#E8DDD0] transition-colors"
+              className="relative px-3.5 bg-[var(--rw-card)] rounded-2xl flex items-center justify-center text-[var(--rw-ink)] hover:bg-[var(--rw-bg2)] transition-colors"
             >
               <SlidersHorizontal className="w-4 h-4" strokeWidth={1.5} />
               {activeFilters > 0 && (
@@ -197,11 +197,11 @@ export default function Home() {
           {loading ? (
           <div className="grid grid-cols-2 gap-3 pt-4">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-3xl overflow-hidden shadow-sm">
-                <div className="aspect-[3/4] bg-[#E8DDD0] animate-pulse" />
+              <div key={i} className="bg-[var(--rw-card)] rounded-3xl overflow-hidden shadow-sm">
+                <div className="aspect-[3/4] bg-[var(--rw-bg2)] animate-pulse" />
                 <div className="p-3 space-y-2">
-                  <div className="h-3 bg-[#E8DDD0] rounded animate-pulse" />
-                  <div className="h-2.5 w-2/3 bg-[#E8DDD0] rounded animate-pulse" />
+                  <div className="h-3 bg-[var(--rw-bg2)] rounded animate-pulse" />
+                  <div className="h-2.5 w-2/3 bg-[var(--rw-bg2)] rounded animate-pulse" />
                 </div>
               </div>
             ))}
@@ -209,8 +209,8 @@ export default function Home() {
         ) : filtered.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-8">
             <PackageOpen className="w-12 h-12 text-[#6B7A5C] mb-3" strokeWidth={1.5} />
-            <p className="text-[#3D3530] font-medium">{isFiltering ? "No matches" : "No items yet"}</p>
-            <p className="text-[#3D3530]/60 text-sm mt-1 mb-5">
+            <p className="text-[var(--rw-ink)] font-medium">{isFiltering ? "No matches" : "No items yet"}</p>
+            <p className="text-[var(--rw-ink)]/60 text-sm mt-1 mb-5">
               {isFiltering
                 ? "Try a different search or clear your filters."
                 : "Be the first to list something for your neighborhood to swap."}
@@ -240,7 +240,7 @@ export default function Home() {
               const saved = isSaved(item.id);
               return (
                 <Link key={item.id} to={`/item/${item.id}`} className="group">
-                  <div className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                  <div className="bg-[var(--rw-card)] rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                     <div className="aspect-[3/4] relative overflow-hidden">
                       <SmartImage
                         src={listingImage(item.image_url)}
@@ -249,7 +249,7 @@ export default function Home() {
                       />
                       {item.category && (
                         <div className="absolute top-3 left-3">
-                          <span className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-[#3D3530]">
+                          <span className="bg-[var(--rw-card)]/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-[var(--rw-ink)]">
                             {item.category}
                           </span>
                         </div>
@@ -261,11 +261,11 @@ export default function Home() {
                           toggleSaved(item.id);
                         }}
                         aria-label={saved ? "Remove from saved" : "Save item"}
-                        className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-transform"
+                        className="absolute top-3 right-3 w-8 h-8 bg-[var(--rw-card)]/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:scale-105 active:scale-95 transition-transform"
                       >
                         <Heart
                           key={saved ? "on" : "off"}
-                          className={`w-4 h-4 ${saved ? "text-[#C2794A] fill-[#C2794A] animate-pop" : "text-[#3D3530]"}`}
+                          className={`w-4 h-4 ${saved ? "text-[#C2794A] fill-[#C2794A] animate-pop" : "text-[var(--rw-ink)]"}`}
                           strokeWidth={1.5}
                         />
                       </button>
@@ -285,8 +285,8 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="px-3 py-2.5">
-                      <p className="text-sm font-medium text-[#3D3530] line-clamp-1">{item.name}</p>
-                      <p className="text-xs text-[#3D3530]/60 line-clamp-1">
+                      <p className="text-sm font-medium text-[var(--rw-ink)] line-clamp-1">{item.name}</p>
+                      <p className="text-xs text-[var(--rw-ink)]/60 line-clamp-1">
                         {[item.condition, item.neighborhood].filter(Boolean).join(" · ")}
                       </p>
                     </div>
@@ -306,13 +306,13 @@ export default function Home() {
           onClick={() => setFilterOpen(false)}
         >
           <div
-            className="bg-[#F5F0E8] w-full rounded-t-3xl p-5 shadow-xl max-h-[80%] overflow-y-auto"
+            className="bg-[var(--rw-bg)] w-full rounded-t-3xl p-5 shadow-xl max-h-[80%] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-heading text-xl text-[#3D3530]">Filters</h2>
-              <button onClick={() => setFilterOpen(false)} className="p-1.5 hover:bg-[#E8DDD0] rounded-full">
-                <X className="w-5 h-5 text-[#3D3530]" strokeWidth={1.5} />
+              <h2 className="font-heading text-xl text-[var(--rw-ink)]">Filters</h2>
+              <button onClick={() => setFilterOpen(false)} className="p-1.5 hover:bg-[var(--rw-bg2)] rounded-full">
+                <X className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
               </button>
             </div>
 
@@ -326,7 +326,7 @@ export default function Home() {
             />
 
             <div className="mb-5">
-              <p className="text-sm font-medium text-[#3D3530] mb-2">Sort</p>
+              <p className="text-sm font-medium text-[var(--rw-ink)] mb-2">Sort</p>
               <div className="flex gap-2">
                 <button onClick={() => setSort("new")} className={chipCls(sort === "new")}>
                   Newest
@@ -340,7 +340,7 @@ export default function Home() {
             <div className="flex gap-2">
               <button
                 onClick={clearFilters}
-                className="flex-1 bg-white text-[#3D3530] py-3 rounded-2xl font-medium hover:bg-[#E8DDD0] transition-colors"
+                className="flex-1 bg-[var(--rw-card)] text-[var(--rw-ink)] py-3 rounded-2xl font-medium hover:bg-[var(--rw-bg2)] transition-colors"
               >
                 Clear all
               </button>

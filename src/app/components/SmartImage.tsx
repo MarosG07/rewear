@@ -21,7 +21,7 @@ export default function SmartImage({ className, src, alt, onLoad, onError, ...re
   return (
     <>
       {!loaded && (
-        <span className="absolute inset-0 z-0 animate-pulse bg-[#E8DDD0]" aria-hidden />
+        <span className="absolute inset-0 z-0 animate-pulse bg-[var(--rw-bg2)]" aria-hidden />
       )}
       <img
         src={errored ? ERROR_IMG_SRC : src}

@@ -58,13 +58,13 @@ export default function ProfileEditSheet({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="bg-[#F5F0E8] w-full rounded-t-3xl sm:rounded-3xl sm:max-w-[360px] p-5 shadow-xl"
+        className="bg-[var(--rw-bg)] w-full rounded-t-3xl sm:rounded-3xl sm:max-w-[360px] p-5 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-heading text-xl text-[#3D3530]">Edit profile</h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-[#E8DDD0] rounded-full transition-colors">
-            <X className="w-5 h-5 text-[#3D3530]" strokeWidth={1.5} />
+          <h2 className="font-heading text-xl text-[var(--rw-ink)]">Edit profile</h2>
+          <button onClick={onClose} className="p-1.5 hover:bg-[var(--rw-bg2)] rounded-full transition-colors">
+            <X className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
           </button>
         </div>
 
@@ -75,7 +75,7 @@ export default function ProfileEditSheet({ onClose }: { onClose: () => void }) {
               alt="Avatar"
               className="w-20 h-20 rounded-full object-cover shadow-sm"
             />
-            <span className="absolute bottom-0 right-0 w-7 h-7 bg-[#C2794A] rounded-full flex items-center justify-center border-2 border-[#F5F0E8]">
+            <span className="absolute bottom-0 right-0 w-7 h-7 bg-[#C2794A] rounded-full flex items-center justify-center border-2 border-[var(--rw-bg)]">
               <Camera className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
             </span>
             <input
@@ -87,17 +87,17 @@ export default function ProfileEditSheet({ onClose }: { onClose: () => void }) {
           </label>
         </div>
 
-        <label className="block text-sm text-[#3D3530] font-medium mb-1.5">Name</label>
+        <label className="block text-sm text-[var(--rw-ink)] font-medium mb-1.5">Name</label>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full bg-white rounded-2xl px-4 py-3 mb-3 text-[#3D3530] focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
+          className="w-full bg-[var(--rw-card)] rounded-2xl px-4 py-3 mb-3 text-[var(--rw-ink)] focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
         />
-        <label className="block text-sm text-[#3D3530] font-medium mb-1.5">Location</label>
+        <label className="block text-sm text-[var(--rw-ink)] font-medium mb-1.5">Location</label>
         <input
           value={location}
           onChange={(e) => setLocation(e.target.value)}
-          className="w-full bg-white rounded-2xl px-4 py-3 mb-5 text-[#3D3530] focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
+          className="w-full bg-[var(--rw-card)] rounded-2xl px-4 py-3 mb-5 text-[var(--rw-ink)] focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
         />
 
         <button

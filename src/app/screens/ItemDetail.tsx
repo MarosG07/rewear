@@ -28,9 +28,9 @@ export default function ItemDetail() {
 
   if (!item) {
     return (
-      <div className="h-full flex items-center justify-center bg-[#F5F0E8]">
+      <div className="h-full flex items-center justify-center bg-[var(--rw-bg)]">
         <div className="text-center">
-          <p className="text-[#3D3530] mb-4">{loading ? "Loading…" : "Item not found"}</p>
+          <p className="text-[var(--rw-ink)] mb-4">{loading ? "Loading…" : "Item not found"}</p>
           {!loading && (
             <button
               onClick={() => navigate("/")}
@@ -51,9 +51,9 @@ export default function ItemDetail() {
   const myActive = myListings.filter((l) => l.status === "active");
 
   return (
-    <div className="h-full flex flex-col bg-[#F5F0E8] overflow-hidden relative">
+    <div className="h-full flex flex-col bg-[var(--rw-bg)] overflow-hidden relative">
       {/* Photo carousel */}
-      <div className="relative h-[55%] overflow-hidden bg-[#E8DDD0]">
+      <div className="relative h-[55%] overflow-hidden bg-[var(--rw-bg2)]">
         <div className="flex h-full overflow-x-auto snap-x snap-mandatory scrollbar-hide">
           {images.map((src, i) => (
             <div key={i} className="relative w-full h-full shrink-0 snap-center">
@@ -63,25 +63,25 @@ export default function ItemDetail() {
         </div>
         <button
           onClick={() => navigate(-1)}
-          className="absolute top-5 left-5 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-white transition-colors"
+          className="absolute top-5 left-5 z-10 w-10 h-10 bg-[var(--rw-card)]/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm hover:bg-[var(--rw-card)] transition-colors"
         >
-          <ChevronLeft className="w-5 h-5 text-[#3D3530]" strokeWidth={1.5} />
+          <ChevronLeft className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
         </button>
         {images.length > 1 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
             {images.map((_, i) => (
-              <span key={i} className="w-1.5 h-1.5 rounded-full bg-white/80 shadow" />
+              <span key={i} className="w-1.5 h-1.5 rounded-full bg-[var(--rw-card)]/80 shadow" />
             ))}
           </div>
         )}
       </div>
 
       {/* Content */}
-      <div className="flex-1 bg-[#F5F0E8] rounded-t-[32px] -mt-8 relative z-10 px-5 py-5 overflow-y-auto overscroll-contain">
-        <h1 className="font-heading text-3xl text-[#3D3530] mb-2">{item.name}</h1>
+      <div className="flex-1 bg-[var(--rw-bg)] rounded-t-[32px] -mt-8 relative z-10 px-5 py-5 overflow-y-auto overscroll-contain">
+        <h1 className="font-heading text-3xl text-[var(--rw-ink)] mb-2">{item.name}</h1>
 
         {item.neighborhood && (
-          <div className="flex items-center gap-1.5 text-[#3D3530]/60 mb-4">
+          <div className="flex items-center gap-1.5 text-[var(--rw-ink)]/60 mb-4">
             <MapPin className="w-4 h-4 text-[#6B7A5C]" strokeWidth={1.5} />
             <span className="text-sm">{item.neighborhood}</span>
           </div>
@@ -89,12 +89,12 @@ export default function ItemDetail() {
 
         <div className="flex flex-wrap gap-2 mb-4">
           {item.condition && (
-            <span className="bg-white px-3 py-1.5 rounded-full text-sm font-medium text-[#3D3530] shadow-sm">
+            <span className="bg-[var(--rw-card)] px-3 py-1.5 rounded-full text-sm font-medium text-[var(--rw-ink)] shadow-sm">
               {item.condition}
             </span>
           )}
           {item.size && (
-            <span className="bg-white px-3 py-1.5 rounded-full text-sm font-medium text-[#3D3530] shadow-sm">
+            <span className="bg-[var(--rw-card)] px-3 py-1.5 rounded-full text-sm font-medium text-[var(--rw-ink)] shadow-sm">
               Size {item.size}
             </span>
           )}
@@ -106,13 +106,13 @@ export default function ItemDetail() {
         </div>
 
         {item.description && (
-          <p className="text-[#3D3530]/80 mb-6 leading-relaxed">{item.description}</p>
+          <p className="text-[var(--rw-ink)]/80 mb-6 leading-relaxed">{item.description}</p>
         )}
 
         {/* Owner card → profile */}
         <Link
           to={`/user/${item.owner_id}`}
-          className="block bg-white rounded-2xl p-4 shadow-sm mb-6 hover:shadow-md transition-shadow"
+          className="block bg-[var(--rw-card)] rounded-2xl p-4 shadow-sm mb-6 hover:shadow-md transition-shadow"
         >
           <div className="flex items-center gap-3">
             <img
@@ -121,10 +121,10 @@ export default function ItemDetail() {
               className="w-12 h-12 rounded-full"
             />
             <div className="flex-1">
-              <p className="font-medium text-[#3D3530]">{item.owner?.name ?? "A Rewearer"}</p>
-              <p className="text-sm text-[#3D3530]/70">{item.owner?.location ?? "Valencia, Spain"}</p>
+              <p className="font-medium text-[var(--rw-ink)]">{item.owner?.name ?? "A Rewearer"}</p>
+              <p className="text-sm text-[var(--rw-ink)]/70">{item.owner?.location ?? "Valencia, Spain"}</p>
             </div>
-            <ChevronRight className="w-5 h-5 text-[#3D3530]/40" strokeWidth={1.5} />
+            <ChevronRight className="w-5 h-5 text-[var(--rw-ink)]/40" strokeWidth={1.5} />
           </div>
         </Link>
 
@@ -199,8 +199,8 @@ export default function ItemDetail() {
                 }}
                 className={`w-full py-4 rounded-2xl font-medium border transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
                   saved
-                    ? "bg-white text-[#C2794A] border-[#C2794A]/30"
-                    : "bg-transparent text-[#3D3530] border-[#3D3530]/20 hover:bg-white"
+                    ? "bg-[var(--rw-card)] text-[#C2794A] border-[#C2794A]/30"
+                    : "bg-transparent text-[var(--rw-ink)] border-[var(--rw-ink)]/20 hover:bg-[var(--rw-card)]"
                 }`}
               >
                 <Heart
@@ -222,20 +222,20 @@ export default function ItemDetail() {
           onClick={() => setOffering(false)}
         >
           <div
-            className="bg-[#F5F0E8] w-full rounded-t-3xl p-5 shadow-xl max-h-[75%] overflow-y-auto"
+            className="bg-[var(--rw-bg)] w-full rounded-t-3xl p-5 shadow-xl max-h-[75%] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-2">
-              <h2 className="font-heading text-xl text-[#3D3530]">Offer an item?</h2>
-              <button onClick={() => setOffering(false)} className="p-1.5 hover:bg-[#E8DDD0] rounded-full">
-                <X className="w-5 h-5 text-[#3D3530]" strokeWidth={1.5} />
+              <h2 className="font-heading text-xl text-[var(--rw-ink)]">Offer an item?</h2>
+              <button onClick={() => setOffering(false)} className="p-1.5 hover:bg-[var(--rw-bg2)] rounded-full">
+                <X className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
               </button>
             </div>
-            <p className="text-sm text-[#3D3530]/60 mb-4">
+            <p className="text-sm text-[var(--rw-ink)]/60 mb-4">
               Optionally offer one of your listings in return — or just send the request.
             </p>
             {myActive.length === 0 ? (
-              <p className="text-sm text-[#3D3530]/50 mb-4">You have no active listings to offer.</p>
+              <p className="text-sm text-[var(--rw-ink)]/50 mb-4">You have no active listings to offer.</p>
             ) : (
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {myActive.map((l) => (
@@ -249,7 +249,7 @@ export default function ItemDetail() {
                     <div className="aspect-square">
                       <img src={listingImage(l.image_url)} alt={l.name} className="w-full h-full object-cover" />
                     </div>
-                    <p className="text-[10px] px-1 py-1 line-clamp-1 text-[#3D3530] bg-white">{l.name}</p>
+                    <p className="text-[10px] px-1 py-1 line-clamp-1 text-[var(--rw-ink)] bg-[var(--rw-card)]">{l.name}</p>
                   </button>
                 ))}
               </div>

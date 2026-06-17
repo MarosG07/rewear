@@ -24,12 +24,12 @@ export default function Credits() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#F5F0E8]">
-      <div className="bg-white border-b border-[#3D3530]/10 px-4 py-3.5 flex items-center gap-3 shrink-0">
-        <button onClick={() => navigate(-1)} className="p-2 hover:bg-[#F5F0E8] rounded-full transition-colors">
-          <ChevronLeft className="w-5 h-5 text-[#3D3530]" strokeWidth={1.5} />
+    <div className="h-full flex flex-col bg-[var(--rw-bg)]">
+      <div className="bg-[var(--rw-card)] border-b border-[var(--rw-ink)]/10 px-4 py-3.5 flex items-center gap-3 shrink-0">
+        <button onClick={() => navigate(-1)} className="p-2 hover:bg-[var(--rw-bg)] rounded-full transition-colors">
+          <ChevronLeft className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
         </button>
-        <h1 className="font-heading text-xl text-[#3D3530]">Get more credits</h1>
+        <h1 className="font-heading text-xl text-[var(--rw-ink)]">Get more credits</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-6">
@@ -49,21 +49,21 @@ export default function Credits() {
               key={p.credits}
               onClick={() => buy(p.credits)}
               disabled={busy !== null}
-              className="w-full bg-white rounded-2xl p-4 shadow-sm flex items-center gap-4 hover:shadow-md transition-all active:scale-[0.99] disabled:opacity-60 text-left"
+              className="w-full bg-[var(--rw-card)] rounded-2xl p-4 shadow-sm flex items-center gap-4 hover:shadow-md transition-all active:scale-[0.99] disabled:opacity-60 text-left"
             >
               <div className="w-12 h-12 rounded-2xl bg-[#6B7A5C]/15 flex items-center justify-center shrink-0">
                 <Sparkles className="w-5 h-5 text-[#6B7A5C]" strokeWidth={1.5} />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="font-heading text-xl text-[#3D3530]">{p.credits} credits</p>
+                  <p className="font-heading text-xl text-[var(--rw-ink)]">{p.credits} credits</p>
                   {p.tag && (
                     <span className="text-[10px] font-medium bg-[#C2794A]/15 text-[#C2794A] px-2 py-0.5 rounded-full">
                       {p.tag}
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-[#3D3530]/60">{p.price}</p>
+                <p className="text-sm text-[var(--rw-ink)]/60">{p.price}</p>
               </div>
               <div className="text-[#C2794A] font-medium text-sm shrink-0">
                 {busy === p.credits ? "Processing…" : "Buy"}
@@ -72,7 +72,7 @@ export default function Credits() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 justify-center text-[#3D3530]/45 text-xs mt-6">
+        <div className="flex items-center gap-2 justify-center text-[var(--rw-ink)]/45 text-xs mt-6">
           <CreditCard className="w-3.5 h-3.5" strokeWidth={1.5} />
           <span>Demo checkout — no real payment is taken.</span>
         </div>

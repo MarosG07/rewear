@@ -8,8 +8,8 @@ function Row({ icon: Icon, title, text }: { icon: LucideIcon; title: string; tex
         <Icon className="w-5 h-5 text-[#6B7A5C]" strokeWidth={1.5} />
       </div>
       <div>
-        <p className="font-medium text-[#3D3530]">{title}</p>
-        <p className="text-sm text-[#3D3530]/65 leading-snug">{text}</p>
+        <p className="font-medium text-[var(--rw-ink)]">{title}</p>
+        <p className="text-sm text-[var(--rw-ink)]/65 leading-snug">{text}</p>
       </div>
     </div>
   );
@@ -17,13 +17,13 @@ function Row({ icon: Icon, title, text }: { icon: LucideIcon; title: string; tex
 
 export default function Onboarding({ onDone }: { onDone: () => void }) {
   return (
-    <div className="absolute inset-0 z-40 bg-[#F5F0E8] flex flex-col px-6 py-8 overflow-y-auto">
+    <div className="absolute inset-0 z-40 bg-[var(--rw-bg)] flex flex-col px-6 py-8 overflow-y-auto">
       <div className="flex-1 flex flex-col justify-center">
         <div className="flex justify-center mb-6">
           <Logo size="large" />
         </div>
-        <h1 className="font-heading text-3xl text-[#3D3530] text-center mb-2">Welcome to Rewear</h1>
-        <p className="text-center text-[#3D3530]/60 mb-8">Swap clothes locally, earn credits, cut waste.</p>
+        <h1 className="font-heading text-3xl text-[var(--rw-ink)] text-center mb-2">Welcome to Rewear</h1>
+        <p className="text-center text-[var(--rw-ink)]/60 mb-8">Swap clothes locally, earn credits, cut waste.</p>
         <div className="space-y-5">
           <Row
             icon={Repeat}

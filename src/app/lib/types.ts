@@ -7,6 +7,10 @@ export interface Profile {
   avatar_url: string | null;
   credits: number;
   created_at: string;
+  streak: number;
+  last_checkin: string | null;
+  referral_code: string | null;
+  referred_by: string | null;
 }
 
 export interface Listing {
