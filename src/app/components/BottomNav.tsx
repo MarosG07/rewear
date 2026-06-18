@@ -1,11 +1,13 @@
 import { Link } from "react-router";
 import { Home, MessageSquare, Plus, User, Heart } from "lucide-react";
+import { useI18n } from "../lib/i18n";
 
 interface BottomNavProps {
   active?: "browse" | "inbox" | "saved" | "profile";
 }
 
 export default function BottomNav({ active }: BottomNavProps) {
+  const { t } = useI18n();
   return (
     <div className="relative shrink-0 bg-[var(--rw-card)] border-t border-[var(--rw-ink)]/10 px-4 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] shadow-lg z-20">
       <div className="flex items-center justify-around max-w-md mx-auto relative">
@@ -16,7 +18,7 @@ export default function BottomNav({ active }: BottomNavProps) {
           }`}
         >
           <Home className="w-6 h-6" strokeWidth={1.5} />
-          <span className="text-xs font-medium">Browse</span>
+          <span className="text-xs font-medium">{t("nav.browse")}</span>
         </Link>
 
         <Link
@@ -26,7 +28,7 @@ export default function BottomNav({ active }: BottomNavProps) {
           }`}
         >
           <MessageSquare className="w-6 h-6" strokeWidth={1.5} />
-          <span className="text-xs font-medium">Inbox</span>
+          <span className="text-xs font-medium">{t("nav.inbox")}</span>
         </Link>
 
         {/* Spacer for center floating button */}
@@ -39,7 +41,7 @@ export default function BottomNav({ active }: BottomNavProps) {
           }`}
         >
           <Heart className="w-6 h-6" strokeWidth={1.5} />
-          <span className="text-xs font-medium">Saved</span>
+          <span className="text-xs font-medium">{t("nav.saved")}</span>
         </Link>
 
         <Link
@@ -49,7 +51,7 @@ export default function BottomNav({ active }: BottomNavProps) {
           }`}
         >
           <User className="w-6 h-6" strokeWidth={1.5} />
-          <span className="text-xs font-medium">Profile</span>
+          <span className="text-xs font-medium">{t("nav.profile")}</span>
         </Link>
 
         {/* Floating add button */}

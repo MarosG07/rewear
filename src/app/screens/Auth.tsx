@@ -2,9 +2,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import Logo from "../components/Logo";
 import { useAuth } from "../store/AuthContext";
+import { useI18n } from "../lib/i18n";
 
 export default function Auth() {
   const { signIn, signUp } = useAuth();
+  const { t } = useI18n();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -31,7 +33,7 @@ export default function Auth() {
     if (error) {
       toast.error(error);
     } else if (mode === "signup") {
-      toast.success("Welcome to Rewear!");
+      toast.success(t("auth.welcomeToast"));
     }
   };
 
@@ -44,13 +46,13 @@ export default function Auth() {
         <div className="flex flex-col items-center mb-8">
           <Logo size="large" showText={true} />
           <p className="text-[var(--rw-ink)]/60 text-sm mt-3 tracking-wide">
-            Circular fashion, locally
+            {t("common.tagline")}
           </p>
         </div>
 
         <form onSubmit={submit} className="bg-[var(--rw-card)] rounded-3xl p-6 shadow-sm space-y-4">
           <h1 className="font-heading text-2xl text-[var(--rw-ink)]">
-            {mode === "signin" ? "Welcome back" : "Create your account"}
+            {mode === "signin" ? t("auth.welcomeBack") : t("auth.createAccount")}
           </h1>
 
           {mode === "signup" && (
@@ -58,7 +60,7 @@ export default function Auth() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Your name"
+              placeholder={t("auth.name")}
               autoComplete="name"
               className="w-full bg-[var(--rw-bg)] rounded-2xl px-4 py-3 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
             />
@@ -67,7 +69,7 @@ export default function Auth() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
+            placeholder={t("auth.email")}
             autoComplete="email"
             className="w-full bg-[var(--rw-bg)] rounded-2xl px-4 py-3 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
           />
@@ -75,7 +77,7 @@ export default function Auth() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
+            placeholder={t("auth.password")}
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
             className="w-full bg-[var(--rw-bg)] rounded-2xl px-4 py-3 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
           />
@@ -85,7 +87,7 @@ export default function Auth() {
             disabled={busy}
             className="w-full bg-[#C2794A] text-white py-4 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] disabled:opacity-60"
           >
-            {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Sign up"}
+            {busy ? t("auth.pleaseWait") : mode === "signin" ? t("auth.signIn") : t("auth.signUp")}
           </button>
         </form>
 
@@ -93,9 +95,7 @@ export default function Auth() {
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
           className="text-center text-sm text-[var(--rw-ink)]/70 mt-5 hover:text-[var(--rw-ink)]"
         >
-          {mode === "signin"
-            ? "New here? Create an account"
-            : "Already have an account? Sign in"}
+          {mode === "signin" ? t("auth.newHere") : t("auth.haveAccount")}
         </button>
       </div>
     </div>

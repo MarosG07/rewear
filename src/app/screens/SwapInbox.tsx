@@ -6,14 +6,15 @@ import { supabase } from "../lib/supabase";
 import { useStore } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
 import { avatarFor, listingImage } from "../lib/images";
+import { useI18n } from "../lib/i18n";
 import type { Conversation, Message, SwapStatus } from "../lib/types";
 
-const statusLabel: Record<SwapStatus, string> = {
-  pending: "Requested",
-  accepted: "Accepted",
-  confirmed: "Meetup set",
-  completed: "Completed",
-  declined: "Declined",
+const statusKey: Record<SwapStatus, string> = {
+  pending: "inbox.statusRequested",
+  accepted: "inbox.statusAccepted",
+  confirmed: "inbox.statusMeetup",
+  completed: "inbox.statusCompleted",
+  declined: "inbox.statusDeclined",
 };
 const statusStyle: Record<SwapStatus, string> = {
   pending: "bg-[#C2794A]/10 text-[#C2794A]",
@@ -28,6 +29,7 @@ function partnerOf(c: Conversation, myId?: string) {
 }
 
 export default function SwapInbox() {
+  const { t } = useI18n();
   const { session } = useAuth();
   const myId = session?.user.id;
   const { conversations } = useStore();
@@ -44,7 +46,7 @@ export default function SwapInbox() {
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=')]"></div>
 
       <div className="bg-[var(--rw-bg)]/95 backdrop-blur-sm border-b border-[var(--rw-ink)]/10 px-4 py-3.5 shrink-0">
-        <h1 className="font-heading text-2xl text-[var(--rw-ink)]">Swap inbox</h1>
+        <h1 className="font-heading text-2xl text-[var(--rw-ink)]">{t("inbox.title")}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
@@ -53,9 +55,9 @@ export default function SwapInbox() {
             <div className="w-16 h-16 rounded-full bg-[var(--rw-bg2)] flex items-center justify-center mb-4">
               <MessageSquare className="w-7 h-7 text-[#6B7A5C]" strokeWidth={1.5} />
             </div>
-            <p className="text-[var(--rw-ink)] font-medium">No swaps yet</p>
+            <p className="text-[var(--rw-ink)] font-medium">{t("inbox.noSwaps")}</p>
             <p className="text-[var(--rw-ink)]/60 text-sm mt-1">
-              Request a swap on an item and the chat will show up here.
+              {t("inbox.noSwapsSub")}
             </p>
           </div>
         ) : (
@@ -86,7 +88,7 @@ export default function SwapInbox() {
                     <p className="text-sm text-[var(--rw-ink)]/70 line-clamp-1">{conv.listing?.name ?? "Swap"}</p>
                     <div className="flex items-center gap-1.5 mt-1.5">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusStyle[conv.status]}`}>
-                        {incoming ? "Wants to swap" : statusLabel[conv.status]}
+                        {incoming ? t("inbox.wantsToSwap") : t(statusKey[conv.status])}
                       </span>
                       {conv.offered && (
                         <span className="text-xs text-[#6B7A5C] flex items-center gap-0.5">
@@ -108,6 +110,7 @@ export default function SwapInbox() {
 }
 
 function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; onBack: () => void }) {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { acceptSwap, declineSwap, markComplete, proposeMeetup, confirmMeetup } = useStore();
   const partner = partnerOf(chat, myId);
@@ -193,7 +196,7 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
             <p className="text-sm text-[var(--rw-ink)]/60">{chat.listing?.name ?? "Swap"}</p>
           </div>
           <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusStyle[chat.status]}`}>
-            {statusLabel[chat.status]}
+            {t(statusKey[chat.status])}
           </span>
         </div>
       </div>
@@ -210,7 +213,7 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
       {inProgress && !meetupNice && (
         <div className="bg-[#C2794A]/12 px-4 py-2 flex items-center gap-2 text-sm text-[var(--rw-ink)] shrink-0">
           <Calendar className="w-4 h-4 text-[#C2794A]" strokeWidth={1.5} />
-          <span>You're matched — arrange a meetup to swap.</span>
+          <span>{t("inbox.matched")}</span>
         </div>
       )}
 
@@ -223,7 +226,7 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
           </div>
           {!chat.meetup_confirmed && inProgress && (
             <button onClick={() => confirmMeetup(chat.id)} className="bg-[#6B7A5C] text-white text-xs font-medium px-3 py-1.5 rounded-full shrink-0">
-              Confirm
+              {t("inbox.confirm")}
             </button>
           )}
           {chat.meetup_confirmed && <Check className="w-4 h-4" strokeWidth={2} />}
@@ -255,30 +258,30 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
                 onClick={() => declineSwap(chat.id)}
                 className="px-5 bg-[var(--rw-bg)] text-[var(--rw-ink)] py-3 rounded-2xl font-medium hover:bg-[var(--rw-bg2)] transition-colors"
               >
-                Decline
+                {t("inbox.decline")}
               </button>
               <button
                 onClick={() => acceptSwap(chat.id)}
                 className="flex-1 bg-[#6B7A5C] text-white py-3 rounded-2xl font-medium flex items-center justify-center gap-2 hover:bg-[#5d6b4f] transition-all active:scale-[0.98]"
               >
                 <Check className="w-5 h-5" strokeWidth={2} />
-                Accept swap
+                {t("inbox.accept")}
               </button>
             </div>
           ) : (
             <div className="w-full bg-[var(--rw-bg)] text-[var(--rw-ink)]/70 py-3 rounded-2xl font-medium text-center mb-3 text-sm">
-              Waiting for {partner?.name ?? "them"} to accept…
+              {t("inbox.waitingAccept", { name: partner?.name ?? "them" })}
             </div>
           )
         ) : chat.status === "declined" ? (
           <div className="w-full bg-[var(--rw-bg)] text-[var(--rw-ink)]/60 py-3 rounded-2xl font-medium text-center mb-3 text-sm">
-            This swap was declined.
+            {t("inbox.declined")}
           </div>
         ) : chat.status === "completed" ? (
           chat.rated ? (
             <div className="w-full bg-[var(--rw-bg)] text-[var(--rw-ink)] py-2.5 rounded-2xl font-medium flex items-center justify-center gap-2 mb-3 text-sm">
               <Check className="w-4 h-4 text-[#6B7A5C]" strokeWidth={2} />
-              Swap complete — thanks for the review!
+              {t("inbox.thanksReview")}
             </div>
           ) : (
             <button
@@ -286,7 +289,7 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
               className="w-full bg-[#C2794A] text-white py-3 rounded-2xl font-medium flex items-center justify-center gap-2 mb-3 hover:bg-[#b36d3f] transition-all active:scale-[0.98]"
             >
               <Star className="w-5 h-5 fill-white" strokeWidth={1.5} />
-              Rate this swap
+              {t("inbox.rateThisSwap")}
             </button>
           )
         ) : showMeetup ? (
@@ -310,7 +313,7 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
                 Propose
               </button>
               <button onClick={() => setShowMeetup(false)} className="px-4 bg-[var(--rw-card)] text-[var(--rw-ink)] py-2 rounded-xl text-sm font-medium">
-                Cancel
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -321,12 +324,12 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
               className="flex-1 bg-[var(--rw-bg)] text-[var(--rw-ink)] py-3 rounded-2xl font-medium flex items-center justify-center gap-2 hover:bg-[var(--rw-bg2)] transition-colors"
             >
               <CalendarPlus className="w-5 h-5 text-[#6B7A5C]" strokeWidth={1.5} />
-              {meetupNice ? "Reschedule" : "Arrange meetup"}
+              {meetupNice ? t("inbox.reschedule") : t("inbox.arrangeMeetup")}
             </button>
             {iCompleted ? (
               <div className="flex-1 bg-[#6B7A5C]/12 text-[#6B7A5C] py-3 rounded-2xl font-medium flex items-center justify-center gap-1.5 text-sm text-center px-2">
                 <Check className="w-4 h-4 shrink-0" strokeWidth={2} />
-                Waiting for {partner?.name?.split(" ")[0] ?? "them"}
+                {t("inbox.waitingFor", { name: partner?.name?.split(" ")[0] ?? "them" })}
               </div>
             ) : (
               <button
@@ -334,7 +337,7 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
                 className="flex-1 bg-[#6B7A5C] text-white py-3 rounded-2xl font-medium flex items-center justify-center gap-1.5 hover:bg-[#5d6b4f] transition-all active:scale-[0.98]"
               >
                 <Check className="w-5 h-5" strokeWidth={2} />
-                Mark complete
+                {t("inbox.markComplete")}
               </button>
             )}
           </div>
@@ -349,7 +352,7 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
             onKeyDown={(e) => {
               if (e.key === "Enter") send();
             }}
-            placeholder="Type a message…"
+            placeholder={t("inbox.typeMessage")}
             className="flex-1 bg-[var(--rw-bg)] rounded-full px-4 py-3 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
           />
           <button

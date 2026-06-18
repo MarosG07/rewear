@@ -1,5 +1,6 @@
 import { Leaf, Repeat, MapPin, type LucideIcon } from "lucide-react";
 import Logo from "./Logo";
+import { useI18n } from "../lib/i18n";
 
 function Row({ icon: Icon, title, text }: { icon: LucideIcon; title: string; text: string }) {
   return (
@@ -16,29 +17,30 @@ function Row({ icon: Icon, title, text }: { icon: LucideIcon; title: string; tex
 }
 
 export default function Onboarding({ onDone }: { onDone: () => void }) {
+  const { t } = useI18n();
   return (
     <div className="absolute inset-0 z-40 bg-[var(--rw-bg)] flex flex-col px-6 py-8 overflow-y-auto">
       <div className="flex-1 flex flex-col justify-center">
         <div className="flex justify-center mb-6">
           <Logo size="large" />
         </div>
-        <h1 className="font-heading text-3xl text-[var(--rw-ink)] text-center mb-2">Welcome to Rewear</h1>
-        <p className="text-center text-[var(--rw-ink)]/60 mb-8">Swap clothes locally, earn credits, cut waste.</p>
+        <h1 className="font-heading text-3xl text-[var(--rw-ink)] text-center mb-2">{t("ob.welcome")}</h1>
+        <p className="text-center text-[var(--rw-ink)]/60 mb-8">{t("ob.sub")}</p>
         <div className="space-y-5">
           <Row
             icon={Repeat}
-            title="Swap, don't shop"
-            text="List items you no longer wear and request swaps from people nearby."
+            title={t("ob.swapTitle")}
+            text={t("ob.swapText")}
           />
           <Row
             icon={Leaf}
-            title="Earn swap credits"
-            text="List (+2), complete a swap (+5), leave a review (+1). Requesting a swap costs −3."
+            title={t("ob.creditsTitle")}
+            text={t("ob.creditsText")}
           />
           <Row
             icon={MapPin}
-            title="Stay local"
-            text="Browse by neighborhood, chat live, and meet up nearby in Valencia."
+            title={t("ob.localTitle")}
+            text={t("ob.localText")}
           />
         </div>
       </div>
@@ -46,7 +48,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
         onClick={onDone}
         className="w-full bg-[#C2794A] text-white py-4 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] mt-8"
       >
-        Get started
+        {t("ob.getStarted")}
       </button>
     </div>
   );

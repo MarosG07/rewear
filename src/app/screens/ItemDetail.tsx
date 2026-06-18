@@ -6,8 +6,10 @@ import { useStore, CREDIT_RULES } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
 import { listingImage, avatarFor } from "../lib/images";
 import { haptic } from "../lib/haptics";
+import { useI18n } from "../lib/i18n";
 
 export default function ItemDetail() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const { id } = useParams();
   const { session } = useAuth();
@@ -30,13 +32,13 @@ export default function ItemDetail() {
     return (
       <div className="h-full flex items-center justify-center bg-[var(--rw-bg)]">
         <div className="text-center">
-          <p className="text-[var(--rw-ink)] mb-4">{loading ? "Loading…" : "Item not found"}</p>
+          <p className="text-[var(--rw-ink)] mb-4">{loading ? t("common.loading") : t("item.notFound")}</p>
           {!loading && (
             <button
               onClick={() => navigate("/")}
               className="bg-[#C2794A] text-white px-6 py-3 rounded-2xl font-medium"
             >
-              Back to Browse
+              {t("item.backToBrowse")}
             </button>
           )}
         </div>
@@ -137,7 +139,7 @@ export default function ItemDetail() {
                 className="w-full bg-[#C2794A] text-white py-4 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <Pencil className="w-5 h-5" strokeWidth={1.5} />
-                Edit listing
+                {t("item.editListing")}
               </button>
               <button
                 onClick={() =>
@@ -148,12 +150,12 @@ export default function ItemDetail() {
                 {item.status === "swapped" ? (
                   <>
                     <RotateCcw className="w-5 h-5" strokeWidth={1.5} />
-                    Mark as available
+                    {t("item.markAvailable")}
                   </>
                 ) : (
                   <>
                     <Check className="w-5 h-5" strokeWidth={2} />
-                    Mark as swapped
+                    {t("item.markSwapped")}
                   </>
                 )}
               </button>
@@ -167,7 +169,7 @@ export default function ItemDetail() {
                 className="w-full bg-transparent text-[#b3402f] border border-[#b3402f]/30 py-4 rounded-2xl font-medium hover:bg-[#b3402f]/5 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <Trash2 className="w-5 h-5" strokeWidth={1.5} />
-                Delete listing
+                {t("item.deleteListing")}
               </button>
             </>
           ) : (
@@ -178,7 +180,7 @@ export default function ItemDetail() {
                   className="w-full bg-[#6B7A5C] text-white py-4 rounded-2xl font-medium shadow-sm flex items-center justify-center gap-2 cursor-default"
                 >
                   <Check className="w-5 h-5" strokeWidth={2} />
-                  Swap requested
+                  {t("item.swapRequested")}
                 </button>
               ) : (
                 <button
@@ -188,8 +190,8 @@ export default function ItemDetail() {
                   }}
                   className="w-full bg-[#C2794A] text-white py-4 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                 >
-                  <span>Request swap</span>
-                  <span className="text-white/80 text-sm">−{CREDIT_RULES.REQUEST_SWAP} credits</span>
+                  <span>{t("item.requestSwap")}</span>
+                  <span className="text-white/80 text-sm">−{CREDIT_RULES.REQUEST_SWAP} {t("common.credits")}</span>
                 </button>
               )}
               <button
@@ -208,7 +210,7 @@ export default function ItemDetail() {
                   className={`w-5 h-5 ${saved ? "fill-[#C2794A] text-[#C2794A] animate-pop" : ""}`}
                   strokeWidth={1.5}
                 />
-                {saved ? "Saved" : "Save item"}
+                {saved ? t("item.saved") : t("item.saveItem")}
               </button>
             </>
           )}
@@ -226,16 +228,16 @@ export default function ItemDetail() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-2">
-              <h2 className="font-heading text-xl text-[var(--rw-ink)]">Offer an item?</h2>
+              <h2 className="font-heading text-xl text-[var(--rw-ink)]">{t("item.offerTitle")}</h2>
               <button onClick={() => setOffering(false)} className="p-1.5 hover:bg-[var(--rw-bg2)] rounded-full">
                 <X className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
               </button>
             </div>
             <p className="text-sm text-[var(--rw-ink)]/60 mb-4">
-              Optionally offer one of your listings in return — or just send the request.
+              {t("item.offerSub")}
             </p>
             {myActive.length === 0 ? (
-              <p className="text-sm text-[var(--rw-ink)]/50 mb-4">You have no active listings to offer.</p>
+              <p className="text-sm text-[var(--rw-ink)]/50 mb-4">{t("item.noActive")}</p>
             ) : (
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {myActive.map((l) => (
@@ -261,7 +263,7 @@ export default function ItemDetail() {
               }}
               className="w-full bg-[#C2794A] text-white py-3.5 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
             >
-              <span>{selectedOffer ? "Send request with offer" : "Send request"}</span>
+              <span>{selectedOffer ? t("item.sendWithOffer") : t("item.sendRequest")}</span>
               <span className="text-white/80 text-sm">−{CREDIT_RULES.REQUEST_SWAP}</span>
             </button>
           </div>

@@ -8,8 +8,10 @@ import AnimatedNumber from "../components/AnimatedNumber";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
 import { listingImage, avatarFor } from "../lib/images";
+import { useI18n } from "../lib/i18n";
 
 export default function Profile() {
+  const { t } = useI18n();
   const { profile, session } = useAuth();
   const { credits, myListings, conversations, ecoStats, boostListing, notificationsEnabled, enableNotifications } =
     useStore();
@@ -43,14 +45,14 @@ export default function Profile() {
                     className="flex items-center gap-1 text-xs text-[var(--rw-ink)]/50 hover:text-[var(--rw-ink)] transition-colors"
                   >
                     <Pencil className="w-4 h-4" strokeWidth={1.5} />
-                    Edit
+                    {t("profile.edit")}
                   </button>
                   <Link
                     to="/settings"
                     className="flex items-center gap-1 text-xs text-[var(--rw-ink)]/50 hover:text-[var(--rw-ink)] transition-colors"
                   >
                     <SettingsIcon className="w-4 h-4" strokeWidth={1.5} />
-                    Settings
+                    {t("profile.settings")}
                   </Link>
                 </div>
               </div>
@@ -64,7 +66,7 @@ export default function Profile() {
               >
                 <Leaf className="w-4 h-4" strokeWidth={1.5} />
                 <span className="font-medium tabular-nums">
-                  <AnimatedNumber value={credits} /> swap credits
+                  <AnimatedNumber value={credits} /> {t("profile.swapCredits")}
                 </span>
                 <span className="w-5 h-5 rounded-full bg-[var(--rw-card)]/20 flex items-center justify-center">
                   <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
@@ -75,7 +77,7 @@ export default function Profile() {
 
           {/* Eco stats */}
           <div className="bg-[var(--rw-card)] rounded-3xl p-5 shadow-sm">
-            <h2 className="font-heading text-lg text-[var(--rw-ink)] mb-4">Your impact</h2>
+            <h2 className="font-heading text-lg text-[var(--rw-ink)] mb-4">{t("profile.impact")}</h2>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
                 <div className="w-12 h-12 bg-[var(--rw-bg)] rounded-full flex items-center justify-center mx-auto mb-2">
@@ -84,7 +86,7 @@ export default function Profile() {
                 <p className="text-2xl font-heading text-[var(--rw-ink)] mb-0.5 tabular-nums">
                   {ecoStats.itemsSwapped}
                 </p>
-                <p className="text-xs text-[var(--rw-ink)]/60">Items swapped</p>
+                <p className="text-xs text-[var(--rw-ink)]/60">{t("profile.itemsSwapped")}</p>
               </div>
               <div className="text-center">
                 <div className="w-12 h-12 bg-[var(--rw-bg)] rounded-full flex items-center justify-center mx-auto mb-2">
@@ -93,7 +95,7 @@ export default function Profile() {
                 <p className="text-2xl font-heading text-[var(--rw-ink)] mb-0.5 tabular-nums">
                   {ecoStats.co2Saved}
                 </p>
-                <p className="text-xs text-[var(--rw-ink)]/60">kg CO₂ saved</p>
+                <p className="text-xs text-[var(--rw-ink)]/60">{t("profile.co2")}</p>
               </div>
               <div className="text-center">
                 <div className="w-12 h-12 bg-[var(--rw-bg)] rounded-full flex items-center justify-center mx-auto mb-2">
@@ -102,7 +104,7 @@ export default function Profile() {
                 <p className="text-2xl font-heading text-[var(--rw-ink)] mb-0.5 tabular-nums">
                   {ecoStats.kmAvoided}
                 </p>
-                <p className="text-xs text-[var(--rw-ink)]/60">km avoided</p>
+                <p className="text-xs text-[var(--rw-ink)]/60">{t("profile.km")}</p>
               </div>
             </div>
           </div>
@@ -118,8 +120,8 @@ export default function Profile() {
               <Flame className="w-4 h-4 text-[#C2794A]" strokeWidth={1.5} />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-[var(--rw-ink)]">Rewards</p>
-              <p className="text-xs text-[var(--rw-ink)]/60 truncate">Streak & invites</p>
+              <p className="text-sm font-medium text-[var(--rw-ink)]">{t("profile.rewards")}</p>
+              <p className="text-xs text-[var(--rw-ink)]/60 truncate">{t("profile.rewardsSub")}</p>
             </div>
           </Link>
           <Link
@@ -130,8 +132,8 @@ export default function Profile() {
               <Search className="w-4 h-4 text-[#6B7A5C]" strokeWidth={1.5} />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-[var(--rw-ink)]">Looking for</p>
-              <p className="text-xs text-[var(--rw-ink)]/60 truncate">Post a wish</p>
+              <p className="text-sm font-medium text-[var(--rw-ink)]">{t("profile.lookingFor")}</p>
+              <p className="text-xs text-[var(--rw-ink)]/60 truncate">{t("profile.lookingForSub")}</p>
             </div>
           </Link>
         </div>
@@ -147,8 +149,8 @@ export default function Profile() {
                 <Bell className="w-4 h-4 text-[#6B7A5C]" strokeWidth={1.5} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-[var(--rw-ink)]">Turn on notifications</p>
-                <p className="text-xs text-[var(--rw-ink)]/60">Get pinged when someone messages you</p>
+                <p className="text-sm font-medium text-[var(--rw-ink)]">{t("profile.turnOnNotifs")}</p>
+                <p className="text-xs text-[var(--rw-ink)]/60">{t("profile.notifsSub")}</p>
               </div>
             </button>
           </div>
@@ -156,15 +158,15 @@ export default function Profile() {
 
         {/* Listed items */}
         <div className="px-4 mb-6">
-          <h2 className="font-heading text-xl text-[var(--rw-ink)] mb-4">Your listings</h2>
+          <h2 className="font-heading text-xl text-[var(--rw-ink)] mb-4">{t("profile.yourListings")}</h2>
           {myListings.length === 0 ? (
             <div className="bg-[var(--rw-card)] rounded-2xl p-5 shadow-sm text-center">
-              <p className="text-sm text-[var(--rw-ink)]/60 mb-3">You haven't listed anything yet.</p>
+              <p className="text-sm text-[var(--rw-ink)]/60 mb-3">{t("profile.noListings")}</p>
               <Link
                 to="/list"
                 className="inline-block bg-[#C2794A] text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-[#b36d3f] transition-all active:scale-[0.98]"
               >
-                List your first item
+                {t("profile.listFirst")}
               </Link>
             </div>
           ) : (
@@ -182,7 +184,7 @@ export default function Profile() {
                         {item.status === "swapped" && (
                           <div className="absolute inset-0 z-[2] bg-black/40 flex items-center justify-center">
                             <span className="bg-[var(--rw-card)] text-[var(--rw-ink)] px-3 py-1.5 rounded-full text-sm font-medium">
-                              Swapped
+                              {t("inbox.statusCompleted")}
                             </span>
                           </div>
                         )}
@@ -190,7 +192,7 @@ export default function Profile() {
                           <div className="absolute top-3 left-3 z-[2]">
                             <span className="bg-[#C2794A] text-white px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 shadow-sm">
                               <Rocket className="w-3 h-3" strokeWidth={1.5} />
-                              Boosted
+                              {t("profile.boosted")}
                             </span>
                           </div>
                         )}
@@ -209,14 +211,14 @@ export default function Profile() {
                       className="mt-2 w-full bg-[var(--rw-card)] text-[#C2794A] border border-[#C2794A]/30 py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-[#C2794A]/5 transition-all active:scale-[0.98]"
                     >
                       <Rocket className="w-4 h-4" strokeWidth={1.5} />
-                      Boost
+                      {t("profile.boost")}
                       <span className="text-[#C2794A]/70 text-xs">−{CREDIT_RULES.BOOST}</span>
                     </button>
                   )}
                   {item.status === "active" && item.boosted && (
                     <div className="mt-2 w-full bg-[#6B7A5C]/10 text-[#6B7A5C] py-2 rounded-xl text-sm font-medium flex items-center justify-center gap-1.5">
                       <Check className="w-4 h-4" strokeWidth={2} />
-                      Boosted
+                      {t("profile.boosted")}
                     </div>
                   )}
                 </div>
@@ -227,11 +229,11 @@ export default function Profile() {
 
         {/* Swap history */}
         <div className="px-4">
-          <h2 className="font-heading text-xl text-[var(--rw-ink)] mb-4">Swap history</h2>
+          <h2 className="font-heading text-xl text-[var(--rw-ink)] mb-4">{t("profile.swapHistory")}</h2>
           {completedSwaps.length === 0 ? (
             <div className="bg-[var(--rw-card)] rounded-2xl p-5 shadow-sm text-center">
               <p className="text-sm text-[var(--rw-ink)]/60">
-                No completed swaps yet — finish one from your inbox to see it here.
+                {t("profile.noCompleted")}
               </p>
             </div>
           ) : (
@@ -251,11 +253,11 @@ export default function Profile() {
                           {swap.listing?.name ?? "Swapped item"}
                         </p>
                         <p className="text-sm text-[var(--rw-ink)]/70 mb-1">
-                          Swapped with <span className="font-medium">{partner?.name ?? "a Rewearer"}</span>
+                          {t("profile.swappedWith")} <span className="font-medium">{partner?.name ?? "a Rewearer"}</span>
                         </p>
                         <div className="flex items-center gap-1 text-xs text-[var(--rw-ink)]/60">
                           <Clock className="w-3 h-3" strokeWidth={1.5} />
-                          <span>{swap.rated ? "Rated · 5 stars" : "Completed"}</span>
+                          <span>{swap.rated ? t("profile.rated5") : t("profile.completed")}</span>
                         </div>
                       </div>
                     </div>

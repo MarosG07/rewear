@@ -7,6 +7,7 @@ import Onboarding from "./components/Onboarding";
 import Auth from "./screens/Auth";
 import { AuthProvider, useAuth } from "./store/AuthContext";
 import { StoreProvider } from "./store/AppStore";
+import { I18nProvider } from "./lib/i18n";
 
 export default function App() {
   // Track the visual viewport so the app shrinks to fit above the on-screen
@@ -29,6 +30,7 @@ export default function App() {
   }, []);
 
   return (
+    <I18nProvider>
     <AuthProvider>
       {/* On phones the app is locked to the viewport (only inner content
           scrolls, so the address bar doesn't toggle and resize things); from
@@ -51,6 +53,7 @@ export default function App() {
         }}
       />
     </AuthProvider>
+    </I18nProvider>
   );
 }
 

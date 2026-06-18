@@ -10,6 +10,7 @@ import { useStore } from "../store/AppStore";
 import { listingImage, avatarFor } from "../lib/images";
 import { haptic } from "../lib/haptics";
 import { NEIGHBORHOODS } from "../data/items";
+import { useI18n } from "../lib/i18n";
 
 const CATEGORIES = ["Dress", "Shirt", "Pants", "Jacket", "Sweater", "Skirt", "Shoes", "Sneakers", "Accessories", "Coat", "Scarf", "Bag"];
 const CONDITIONS = ["New", "Like New", "Good", "Worn"];
@@ -30,12 +31,13 @@ function FilterRow({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const { t } = useI18n();
   return (
     <div className="mb-4">
       <p className="text-sm font-medium text-[var(--rw-ink)] mb-2">{label}</p>
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => onChange("")} className={chipCls(value === "")}>
-          All
+          {t("home.all")}
         </button>
         {options.map((o) => (
           <button key={o} onClick={() => onChange(o)} className={chipCls(value === o)}>
@@ -48,6 +50,7 @@ function FilterRow({
 }
 
 export default function Home() {
+  const { t } = useI18n();
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
   const { credits, listings, loading, isSaved, toggleSaved, reload } = useStore();
   const [refreshing, setRefreshing] = useState(false);
@@ -138,7 +141,7 @@ export default function Home() {
           >
             <div className="flex items-center justify-center gap-2">
               <Grid3x3 className="w-4 h-4" strokeWidth={1.5} />
-              <span className="text-sm font-medium">Grid</span>
+              <span className="text-sm font-medium">{t("home.grid")}</span>
             </div>
           </button>
           <button
@@ -151,7 +154,7 @@ export default function Home() {
           >
             <div className="flex items-center justify-center gap-2">
               <Map className="w-4 h-4" strokeWidth={1.5} />
-              <span className="text-sm font-medium">Map</span>
+              <span className="text-sm font-medium">{t("home.map")}</span>
             </div>
           </button>
         </div>
@@ -168,7 +171,7 @@ export default function Home() {
                 autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search items, categories…"
+                placeholder={t("home.searchPlaceholder")}
                 className="w-full bg-[var(--rw-card)] rounded-2xl pl-9 pr-3 py-2.5 text-sm text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
               />
             </div>
@@ -209,11 +212,9 @@ export default function Home() {
         ) : filtered.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-8">
             <PackageOpen className="w-12 h-12 text-[#6B7A5C] mb-3" strokeWidth={1.5} />
-            <p className="text-[var(--rw-ink)] font-medium">{isFiltering ? "No matches" : "No items yet"}</p>
+            <p className="text-[var(--rw-ink)] font-medium">{isFiltering ? t("home.noMatches") : t("home.noItems")}</p>
             <p className="text-[var(--rw-ink)]/60 text-sm mt-1 mb-5">
-              {isFiltering
-                ? "Try a different search or clear your filters."
-                : "Be the first to list something for your neighborhood to swap."}
+              {isFiltering ? t("home.noMatchesSub") : t("home.noItemsSub")}
             </p>
             {isFiltering ? (
               <button
@@ -223,14 +224,14 @@ export default function Home() {
                 }}
                 className="bg-[#C2794A] text-white px-6 py-3 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98]"
               >
-                Clear filters
+                {t("home.clearFilters")}
               </button>
             ) : (
               <Link
                 to="/list"
                 className="bg-[#C2794A] text-white px-6 py-3 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98]"
               >
-                List an item
+                {t("home.listAnItem")}
               </Link>
             )}
           </div>
@@ -310,29 +311,29 @@ export default function Home() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-heading text-xl text-[var(--rw-ink)]">Filters</h2>
+              <h2 className="font-heading text-xl text-[var(--rw-ink)]">{t("home.filters")}</h2>
               <button onClick={() => setFilterOpen(false)} className="p-1.5 hover:bg-[var(--rw-bg2)] rounded-full">
                 <X className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
               </button>
             </div>
 
-            <FilterRow label="Category" options={CATEGORIES} value={fCategory} onChange={setFCategory} />
-            <FilterRow label="Condition" options={CONDITIONS} value={fCondition} onChange={setFCondition} />
+            <FilterRow label={t("home.category")} options={CATEGORIES} value={fCategory} onChange={setFCategory} />
+            <FilterRow label={t("home.condition")} options={CONDITIONS} value={fCondition} onChange={setFCondition} />
             <FilterRow
-              label="Neighborhood"
+              label={t("home.neighborhood")}
               options={[...NEIGHBORHOODS]}
               value={fNeighborhood}
               onChange={setFNeighborhood}
             />
 
             <div className="mb-5">
-              <p className="text-sm font-medium text-[var(--rw-ink)] mb-2">Sort</p>
+              <p className="text-sm font-medium text-[var(--rw-ink)] mb-2">{t("home.sort")}</p>
               <div className="flex gap-2">
                 <button onClick={() => setSort("new")} className={chipCls(sort === "new")}>
-                  Newest
+                  {t("home.newest")}
                 </button>
                 <button onClick={() => setSort("old")} className={chipCls(sort === "old")}>
-                  Oldest
+                  {t("home.oldest")}
                 </button>
               </div>
             </div>
@@ -342,13 +343,13 @@ export default function Home() {
                 onClick={clearFilters}
                 className="flex-1 bg-[var(--rw-card)] text-[var(--rw-ink)] py-3 rounded-2xl font-medium hover:bg-[var(--rw-bg2)] transition-colors"
               >
-                Clear all
+                {t("home.clearAll")}
               </button>
               <button
                 onClick={() => setFilterOpen(false)}
                 className="flex-1 bg-[#C2794A] text-white py-3 rounded-2xl font-medium hover:bg-[#b36d3f] transition-all active:scale-[0.98]"
               >
-                Done
+                {t("common.done")}
               </button>
             </div>
           </div>
