@@ -17,11 +17,11 @@ export default function Auth() {
     e.preventDefault();
     if (busy) return;
     if (mode === "signup" && !name.trim()) {
-      toast.error("Add your name");
+      toast.error(t("toast.addName"));
       return;
     }
     if (!email.trim() || password.length < 6) {
-      toast.error("Enter an email and a password (6+ characters)");
+      toast.error(t("toast.enterEmailPw"));
       return;
     }
     setBusy(true);

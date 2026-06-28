@@ -6,6 +6,7 @@ import BottomNav from "../components/BottomNav";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
 import { fileToDataUrl } from "../lib/upload";
 import { NEIGHBORHOODS } from "../data/items";
+import { useI18n } from "../lib/i18n";
 
 const categories = ["Dress", "Shirt", "Pants", "Jacket", "Sweater", "Skirt", "Shoes", "Sneakers", "Accessories"];
 const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -13,6 +14,7 @@ const conditions = ["New", "Like New", "Good", "Worn"];
 
 export default function ListItem() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { listItem } = useStore();
   const [title, setTitle] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
@@ -26,7 +28,7 @@ export default function ListItem() {
   const handleFile = async (index: number, file?: File) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Please choose an image file");
+      toast.error(t("toast.chooseImage"));
       return;
     }
     try {
@@ -51,11 +53,11 @@ export default function ListItem() {
   const handleSubmit = async () => {
     if (busy) return;
     if (!title.trim()) {
-      toast.error("Add a title", { description: "Give your item a name first." });
+      toast.error(t("toast.addTitle"), { description: t("toast.addTitleD") });
       return;
     }
     if (!selectedCategory) {
-      toast.error("Pick a category", { description: "Choose what kind of item this is." });
+      toast.error(t("toast.pickCategory"), { description: t("toast.pickCategoryD") });
       return;
     }
     setBusy(true);
@@ -85,7 +87,7 @@ export default function ListItem() {
           >
             <ChevronLeft className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
           </button>
-          <h1 className="font-heading text-2xl text-[var(--rw-ink)]">List an item</h1>
+          <h1 className="font-heading text-2xl text-[var(--rw-ink)]">{t("list.title")}</h1>
         </div>
       </div>
 
@@ -94,19 +96,19 @@ export default function ListItem() {
         <div className="bg-[var(--rw-card)] rounded-3xl p-5 shadow-sm space-y-5">
           {/* Title */}
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Title</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("list.fieldTitle")}</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Vintage Denim Jacket"
+              placeholder={t("list.titlePlaceholder")}
               className="w-full bg-[var(--rw-bg)] rounded-2xl px-4 py-3 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
             />
           </div>
 
           {/* Photo upload */}
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Photos</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("list.photos")}</label>
             <div className="grid grid-cols-3 gap-3">
               {[0, 1, 2].map((i) => (
                 <label
@@ -145,7 +147,7 @@ export default function ListItem() {
                   ) : (
                     <div className="text-center">
                       <Camera className="w-6 h-6 text-[var(--rw-ink)]/40 mx-auto mb-1" strokeWidth={1.5} />
-                      <span className="text-xs text-[var(--rw-ink)]/40">Add</span>
+                      <span className="text-xs text-[var(--rw-ink)]/40">{t("list.add")}</span>
                     </div>
                   )}
                 </label>
@@ -155,7 +157,7 @@ export default function ListItem() {
 
           {/* Category */}
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Category</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("home.category")}</label>
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
               {categories.map((cat) => (
                 <button
@@ -175,7 +177,7 @@ export default function ListItem() {
 
           {/* Neighborhood */}
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Neighborhood</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("home.neighborhood")}</label>
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
               {NEIGHBORHOODS.map((n) => (
                 <button
@@ -195,7 +197,7 @@ export default function ListItem() {
 
           {/* Size */}
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Size</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("list.size")}</label>
             <div className="grid grid-cols-6 gap-2">
               {sizes.map((size) => (
                 <button
@@ -215,7 +217,7 @@ export default function ListItem() {
 
           {/* Condition */}
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Condition</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("home.condition")}</label>
             <div className="grid grid-cols-2 gap-2">
               {conditions.map((condition) => (
                 <button
@@ -235,7 +237,7 @@ export default function ListItem() {
 
           {/* Swap preference */}
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Swap preference</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("list.swapPref")}</label>
             <div className="space-y-2">
               <button
                 onClick={() => setSwapPreference("open")}
@@ -245,8 +247,8 @@ export default function ListItem() {
                     : "bg-[var(--rw-bg)] text-[var(--rw-ink)] hover:bg-[var(--rw-bg2)]"
                 }`}
               >
-                <p className="font-medium">Open swap</p>
-                <p className="text-sm opacity-80 mt-0.5">Accept any swap requests</p>
+                <p className="font-medium">{t("list.openSwap")}</p>
+                <p className="text-sm opacity-80 mt-0.5">{t("list.openSwapD")}</p>
               </button>
               <button
                 onClick={() => setSwapPreference("specific")}
@@ -256,8 +258,8 @@ export default function ListItem() {
                     : "bg-[var(--rw-bg)] text-[var(--rw-ink)] hover:bg-[var(--rw-bg2)]"
                 }`}
               >
-                <p className="font-medium">Specific item only</p>
-                <p className="text-sm opacity-80 mt-0.5">Looking for something particular</p>
+                <p className="font-medium">{t("list.specific")}</p>
+                <p className="text-sm opacity-80 mt-0.5">{t("list.specificD")}</p>
               </button>
             </div>
           </div>
@@ -269,11 +271,11 @@ export default function ListItem() {
             className="w-full bg-[#C2794A] text-white py-4 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {busy ? (
-              <span>Listing…</span>
+              <span>{t("list.listing")}</span>
             ) : (
               <>
-                <span>List item</span>
-                <span className="text-white/80 text-sm">+{CREDIT_RULES.LIST_ITEM} credits</span>
+                <span>{t("list.listItem")}</span>
+                <span className="text-white/80 text-sm">+{CREDIT_RULES.LIST_ITEM} {t("common.credits")}</span>
               </>
             )}
           </button>

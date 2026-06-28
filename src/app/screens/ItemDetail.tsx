@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router";
-import { ChevronLeft, Heart, MapPin, Check, Trash2, RotateCcw, Pencil, X, ChevronRight } from "lucide-react";
+import { ChevronLeft, Heart, MapPin, Check, Trash2, RotateCcw, Pencil, X, ChevronRight, Flag } from "lucide-react";
 import SmartImage from "../components/SmartImage";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
@@ -22,6 +22,7 @@ export default function ItemDetail() {
     requestSwap,
     deleteListing,
     setListingStatus,
+    reportListing,
     myListings,
   } = useStore();
   const item = id ? getListing(id) : undefined;
@@ -211,6 +212,15 @@ export default function ItemDetail() {
                   strokeWidth={1.5}
                 />
                 {saved ? t("item.saved") : t("item.saveItem")}
+              </button>
+              <button
+                onClick={() => {
+                  if (window.confirm(t("item.reportConfirm"))) reportListing(item.id);
+                }}
+                className="w-full py-2 rounded-2xl text-sm text-[var(--rw-ink)]/45 hover:text-[#b3402f] transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Flag className="w-4 h-4" strokeWidth={1.5} />
+                {t("item.report")}
               </button>
             </>
           )}

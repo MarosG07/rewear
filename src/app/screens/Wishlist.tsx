@@ -6,11 +6,13 @@ import { useAuth } from "../store/AuthContext";
 import { avatarFor } from "../lib/images";
 import { haptic } from "../lib/haptics";
 import { NEIGHBORHOODS } from "../data/items";
+import { useI18n } from "../lib/i18n";
 
 const CATEGORIES = ["Dress", "Shirt", "Pants", "Jacket", "Sweater", "Skirt", "Shoes", "Sneakers", "Accessories"];
 
 export default function Wishlist() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { session } = useAuth();
   const { wishlist, addWish, removeWish } = useStore();
   const myId = session?.user.id;
@@ -47,7 +49,7 @@ export default function Wishlist() {
         <button onClick={() => navigate(-1)} className="p-2 hover:bg-[var(--rw-bg)] rounded-full transition-colors">
           <ChevronLeft className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
         </button>
-        <h1 className="font-heading text-xl text-[var(--rw-ink)] flex-1">Looking for</h1>
+        <h1 className="font-heading text-xl text-[var(--rw-ink)] flex-1">{t("wish.title")}</h1>
         <button
           onClick={() => {
             haptic();
@@ -65,7 +67,7 @@ export default function Wishlist() {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="What are you looking for? (e.g. black wool coat)"
+              placeholder={t("wish.placeholder")}
               className="w-full bg-[var(--rw-bg)] rounded-xl px-3 py-2.5 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
             />
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
@@ -82,11 +84,11 @@ export default function Wishlist() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              placeholder="Any details (size, color)…"
+              placeholder={t("wish.detailsPlaceholder")}
               className="w-full bg-[var(--rw-bg)] rounded-xl px-3 py-2.5 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C] resize-none"
             />
             <button onClick={submit} disabled={busy || !title.trim()} className="w-full bg-[#C2794A] text-white py-2.5 rounded-xl font-medium disabled:opacity-50">
-              {busy ? "Posting…" : "Post"}
+              {busy ? t("wish.posting") : t("wish.post")}
             </button>
           </div>
         )}
@@ -96,8 +98,8 @@ export default function Wishlist() {
             <div className="w-16 h-16 rounded-full bg-[var(--rw-bg2)] flex items-center justify-center mb-4">
               <Search className="w-7 h-7 text-[#6B7A5C]" strokeWidth={1.5} />
             </div>
-            <p className="text-[var(--rw-ink)] font-medium">No wishes yet</p>
-            <p className="text-[var(--rw-ink)]/60 text-sm mt-1">Post what you're hunting for and neighbors can offer it.</p>
+            <p className="text-[var(--rw-ink)] font-medium">{t("wish.none")}</p>
+            <p className="text-[var(--rw-ink)]/60 text-sm mt-1">{t("wish.noneSub")}</p>
           </div>
         ) : (
           wishlist.map((w) => (
@@ -105,7 +107,7 @@ export default function Wishlist() {
               <div className="flex items-start gap-3">
                 <img src={avatarFor(w.user?.name, w.user?.avatar_url)} alt="" className="w-9 h-9 rounded-full" />
                 <div className="flex-1">
-                  <p className="text-xs text-[var(--rw-ink)]/60">{w.user?.name ?? "A Rewearer"} is looking for</p>
+                  <p className="text-xs text-[var(--rw-ink)]/60">{t("wish.userLooking", { name: w.user?.name ?? "A Rewearer" })}</p>
                   <p className="font-medium text-[var(--rw-ink)]">{w.title}</p>
                   {(w.category || w.neighborhood) && (
                     <div className="flex gap-1.5 mt-1.5">

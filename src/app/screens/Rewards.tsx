@@ -5,11 +5,13 @@ import { toast } from "sonner";
 import { useStore } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
 import { haptic } from "../lib/haptics";
+import { useI18n } from "../lib/i18n";
 
 const todayUTC = () => new Date().toISOString().slice(0, 10);
 
 export default function Rewards() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { profile, refreshProfile } = useAuth();
   const { conversations, myListings, dailyCheckin, redeemReferral } = useStore();
 
@@ -24,12 +26,12 @@ export default function Rewards() {
   const listed = myListings.length;
 
   const achievements = [
-    { label: "First listing", desc: "List an item", Icon: Package, done: listed >= 1 },
-    { label: "First swap", desc: "Complete a swap", Icon: Repeat, done: completed >= 1 },
-    { label: "Swap pro", desc: "5 swaps", Icon: Award, done: completed >= 5 },
-    { label: "Eco hero", desc: "10 swaps", Icon: Leaf, done: completed >= 10 },
-    { label: "On a roll", desc: "3-day streak", Icon: Flame, done: streak >= 3 },
-    { label: "Week warrior", desc: "7-day streak", Icon: Sparkles, done: streak >= 7 },
+    { label: t("rewards.firstListing"), desc: t("rewards.firstListingD"), Icon: Package, done: listed >= 1 },
+    { label: t("rewards.firstSwap"), desc: t("rewards.firstSwapD"), Icon: Repeat, done: completed >= 1 },
+    { label: t("rewards.swapPro"), desc: t("rewards.swapProD"), Icon: Award, done: completed >= 5 },
+    { label: t("rewards.ecoHero"), desc: t("rewards.ecoHeroD"), Icon: Leaf, done: completed >= 10 },
+    { label: t("rewards.onRoll"), desc: t("rewards.onRollD"), Icon: Flame, done: streak >= 3 },
+    { label: t("rewards.weekWarrior"), desc: t("rewards.weekWarriorD"), Icon: Sparkles, done: streak >= 7 },
   ];
 
   const checkin = async () => {
@@ -40,10 +42,10 @@ export default function Rewards() {
     setClaiming(false);
     if (res?.claimed) {
       setClaimedToday(true);
-      toast.success(`+${res.bonus} credits`, { description: `Day ${res.streak} streak 🔥` });
+      toast.success(`+${res.bonus} ${t("common.credits")}`, { description: t("rewards.dayStreak", { n: res.streak }) });
     } else if (res && !res.claimed) {
       setClaimedToday(true);
-      toast("Already claimed today", { description: "Come back tomorrow!" });
+      toast(t("rewards.alreadyClaimed"), { description: t("rewards.comeBack") });
     }
   };
 
@@ -79,7 +81,7 @@ export default function Rewards() {
         <button onClick={() => navigate(-1)} className="p-2 hover:bg-[var(--rw-bg)] rounded-full transition-colors">
           <ChevronLeft className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
         </button>
-        <h1 className="font-heading text-xl text-[var(--rw-ink)]">Rewards</h1>
+        <h1 className="font-heading text-xl text-[var(--rw-ink)]">{t("rewards.title")}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-5 space-y-5">
@@ -87,23 +89,23 @@ export default function Rewards() {
         <section className="bg-gradient-to-br from-[#C2794A] to-[#b36d3f] text-white rounded-3xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <Flame className="w-5 h-5" strokeWidth={1.5} />
-            <span className="text-sm opacity-90">Daily streak</span>
+            <span className="text-sm opacity-90">{t("rewards.dailyStreak")}</span>
           </div>
           <p className="font-heading text-4xl tabular-nums mb-3">
-            {streak} <span className="text-xl font-normal opacity-80">day{streak === 1 ? "" : "s"}</span>
+            {streak} <span className="text-xl font-normal opacity-80">{streak === 1 ? t("rewards.day") : t("rewards.days")}</span>
           </p>
           <button
             onClick={checkin}
             disabled={claiming || claimedToday}
             className="w-full bg-white/95 text-[#3D3530] py-3 rounded-2xl font-medium active:scale-[0.98] transition-transform disabled:opacity-70"
           >
-            {claimedToday ? "Claimed — see you tomorrow 👋" : claiming ? "Claiming…" : "Claim today's bonus"}
+            {claimedToday ? t("rewards.claimed") : claiming ? t("rewards.claiming") : t("rewards.claimToday")}
           </button>
         </section>
 
         {/* Achievements */}
         <section>
-          <h2 className="font-heading text-lg text-[var(--rw-ink)] mb-3 px-1">Achievements</h2>
+          <h2 className="font-heading text-lg text-[var(--rw-ink)] mb-3 px-1">{t("rewards.achievements")}</h2>
           <div className="grid grid-cols-2 gap-3">
             {achievements.map((a) => (
               <div
@@ -130,10 +132,10 @@ export default function Rewards() {
         <section className="bg-[var(--rw-card)] rounded-3xl p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <Gift className="w-5 h-5 text-[#C2794A]" strokeWidth={1.5} />
-            <h2 className="font-heading text-lg text-[var(--rw-ink)]">Invite a friend</h2>
+            <h2 className="font-heading text-lg text-[var(--rw-ink)]">{t("rewards.invite")}</h2>
           </div>
           <p className="text-sm text-[var(--rw-ink)]/60 mb-3">
-            Share your code — you both get +5 credits when they redeem it.
+            {t("rewards.inviteSub")}
           </p>
           <button
             onClick={copyCode}
@@ -144,7 +146,7 @@ export default function Rewards() {
             </span>
             <span className="flex items-center gap-1.5 text-sm text-[#C2794A] font-medium">
               {copied ? <Check className="w-4 h-4" strokeWidth={2} /> : <Copy className="w-4 h-4" strokeWidth={1.5} />}
-              {copied ? "Copied" : "Copy"}
+              {copied ? t("rewards.copied") : t("rewards.copy")}
             </span>
           </button>
 
@@ -153,7 +155,7 @@ export default function Rewards() {
               <input
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="Enter a friend's code"
+                placeholder={t("rewards.enterCode")}
                 maxLength={6}
                 className="flex-1 bg-[var(--rw-bg)] rounded-xl px-3 py-2.5 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
               />
@@ -162,7 +164,7 @@ export default function Rewards() {
                 disabled={!code.trim() || redeeming}
                 className="px-4 bg-[#6B7A5C] text-white rounded-xl text-sm font-medium disabled:opacity-50"
               >
-                {redeeming ? "…" : "Redeem"}
+                {redeeming ? "…" : t("rewards.redeem")}
               </button>
             </div>
           )}

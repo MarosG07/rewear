@@ -4,12 +4,12 @@ import { ChevronLeft, Star } from "lucide-react";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
 import { avatarFor } from "../lib/images";
-
-const RATING_WORDS = ["", "Poor", "Okay", "Good", "Great", "Excellent"];
+import { useI18n } from "../lib/i18n";
 
 export default function RateSwap() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { session } = useAuth();
   const { conversations, submitReview } = useStore();
   const myId = session?.user.id;
@@ -21,9 +21,9 @@ export default function RateSwap() {
   if (!convo) {
     return (
       <div className="h-full flex flex-col items-center justify-center bg-[var(--rw-bg)] gap-4">
-        <p className="text-[var(--rw-ink)]/60">Swap not found</p>
+        <p className="text-[var(--rw-ink)]/60">{t("rate.notFound")}</p>
         <button onClick={() => navigate("/inbox")} className="bg-[#C2794A] text-white px-6 py-3 rounded-2xl font-medium">
-          Back to inbox
+          {t("rate.backToInbox")}
         </button>
       </div>
     );
@@ -46,7 +46,7 @@ export default function RateSwap() {
         <button onClick={() => navigate("/inbox")} className="p-2 hover:bg-[var(--rw-bg)] rounded-full transition-colors">
           <ChevronLeft className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
         </button>
-        <h1 className="font-heading text-xl text-[var(--rw-ink)]">Rate your swap</h1>
+        <h1 className="font-heading text-xl text-[var(--rw-ink)]">{t("rate.title")}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-8 flex flex-col items-center">
@@ -56,11 +56,11 @@ export default function RateSwap() {
           className="w-20 h-20 rounded-full shadow-sm mb-3"
         />
         <p className="text-[var(--rw-ink)] mb-1">
-          How was swapping with <span className="font-medium">{partner?.name ?? "them"}</span>?
+          {t("rate.howWas", { name: partner?.name ?? "them" })}
         </p>
 
         {alreadyRated ? (
-          <p className="text-[var(--rw-ink)]/60 mt-6">You've already reviewed this swap. 🙌</p>
+          <p className="text-[var(--rw-ink)]/60 mt-6">{t("rate.alreadyReviewed")}</p>
         ) : (
           <>
             <div className="flex gap-1.5 mt-5 mb-1">
@@ -73,13 +73,13 @@ export default function RateSwap() {
                 </button>
               ))}
             </div>
-            <p className="text-sm text-[#6B7A5C] font-medium h-5 mb-5">{RATING_WORDS[rating]}</p>
+            <p className="text-sm text-[#6B7A5C] font-medium h-5 mb-5">{t(`rate.word${rating}`)}</p>
 
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={4}
-              placeholder="Add a comment (optional)…"
+              placeholder={t("rate.commentPlaceholder")}
               className="w-full bg-[var(--rw-card)] rounded-2xl px-4 py-3 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C] resize-none"
             />
 
@@ -88,7 +88,7 @@ export default function RateSwap() {
               disabled={busy}
               className="w-full bg-[#C2794A] text-white py-4 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] disabled:opacity-60 mt-5 flex items-center justify-center gap-2"
             >
-              {busy ? "Submitting…" : "Submit review"}
+              {busy ? t("rate.submitting") : t("rate.submit")}
               {!busy && <span className="text-white/80 text-sm">+{CREDIT_RULES.FIVE_STAR}</span>}
             </button>
           </>

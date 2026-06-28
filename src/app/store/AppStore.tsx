@@ -83,6 +83,7 @@ interface StoreValue {
   listItem: (input: ListInput) => Promise<boolean>;
   updateListing: (listingId: string, input: EditInput, newImageDataUrls?: string[]) => Promise<boolean>;
   boostListing: (listingId: string) => Promise<void>;
+  reportListing: (listingId: string, reason?: string) => Promise<void>;
   deleteListing: (listingId: string) => Promise<void>;
   setListingStatus: (listingId: string, status: "active" | "swapped") => Promise<void>;
 
@@ -125,7 +126,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .from("listings")
       .select(LISTING_SELECT)
       .order("created_at", { ascending: false });
-    setListings((data as Listing[]) ?? []);
+    // Drop community-hidden listings. `hidden` is undefined until migration-005
+    // runs, so this is a no-op on older databases.
+    setListings(((data as Listing[]) ?? []).filter((l) => !l.hidden));
   }, []);
 
   const loadConversations = useCallback(async () => {
@@ -515,6 +518,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await loadListings();
   };
 
+  // Community reporting — flags a listing; the server auto-hides it once enough
+  // distinct users have reported it (see migration-005.sql).
+  const reportListing = async (listingId: string, reason?: string) => {
+    const { data, error } = await supabase.rpc("report_listing", {
+      target: listingId,
+      why: reason ?? null,
+    });
+    if (error) {
+      toast.error("Couldn't send that report");
+      return;
+    }
+    const res = data as { ok: boolean; hidden?: boolean } | null;
+    if (res?.hidden) {
+      toast.success("Reported — this listing has been hidden");
+      await loadListings();
+    } else {
+      toast("Thanks for the report", { description: "We'll take a look." });
+    }
+  };
+
   const deleteListing = async (listingId: string) => {
     setListings((l) => l.filter((x) => x.id !== listingId)); // optimistic
     const { error } = await supabase.from("listings").delete().eq("id", listingId);
@@ -632,6 +655,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     listItem,
     updateListing,
     boostListing,
+    reportListing,
     deleteListing,
     setListingStatus,
     notificationsEnabled,

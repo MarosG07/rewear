@@ -4,11 +4,13 @@ import { ChevronLeft, MapPin, Star } from "lucide-react";
 import SmartImage from "../components/SmartImage";
 import { supabase } from "../lib/supabase";
 import { avatarFor, listingImage } from "../lib/images";
+import { useI18n } from "../lib/i18n";
 import type { Profile, Listing, Review } from "../lib/types";
 
 export default function UserProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -52,14 +54,14 @@ export default function UserProfile() {
         <button onClick={() => navigate(-1)} className="p-2 hover:bg-[var(--rw-bg)] rounded-full transition-colors">
           <ChevronLeft className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
         </button>
-        <h1 className="font-heading text-xl text-[var(--rw-ink)]">Profile</h1>
+        <h1 className="font-heading text-xl text-[var(--rw-ink)]">{t("nav.profile")}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
         {loading ? (
-          <div className="flex items-center justify-center h-40 text-[var(--rw-ink)]/50">Loading…</div>
+          <div className="flex items-center justify-center h-40 text-[var(--rw-ink)]/50">{t("common.loading")}</div>
         ) : !profile ? (
-          <div className="flex items-center justify-center h-40 text-[var(--rw-ink)]/50">User not found</div>
+          <div className="flex items-center justify-center h-40 text-[var(--rw-ink)]/50">{t("user.notFound")}</div>
         ) : (
           <>
             {/* Header */}
@@ -81,11 +83,11 @@ export default function UserProfile() {
                       <Star className="w-4 h-4 text-[#C2794A] fill-[#C2794A]" strokeWidth={1.5} />
                       <span className="text-sm text-[var(--rw-ink)] font-medium">{avg.toFixed(1)}</span>
                       <span className="text-sm text-[var(--rw-ink)]/60">
-                        · {reviews.length} review{reviews.length === 1 ? "" : "s"}
+                        · {reviews.length} {reviews.length === 1 ? t("user.review") : t("user.reviews")}
                       </span>
                     </div>
                   ) : (
-                    <span className="text-sm text-[var(--rw-ink)]/50">No reviews yet</span>
+                    <span className="text-sm text-[var(--rw-ink)]/50">{t("user.noReviews")}</span>
                   )}
                 </div>
               </div>
@@ -93,9 +95,9 @@ export default function UserProfile() {
 
             {/* Their listings */}
             <div className="px-4 mb-6">
-              <h3 className="font-heading text-lg text-[var(--rw-ink)] mb-3">Listings</h3>
+              <h3 className="font-heading text-lg text-[var(--rw-ink)] mb-3">{t("user.listings")}</h3>
               {listings.length === 0 ? (
-                <p className="text-sm text-[var(--rw-ink)]/60">No active listings.</p>
+                <p className="text-sm text-[var(--rw-ink)]/60">{t("user.noActive")}</p>
               ) : (
                 <div className="grid grid-cols-2 gap-3">
                   {listings.map((item) => (
@@ -124,7 +126,7 @@ export default function UserProfile() {
             {/* Reviews */}
             {reviews.length > 0 && (
               <div className="px-4">
-                <h3 className="font-heading text-lg text-[var(--rw-ink)] mb-3">Reviews</h3>
+                <h3 className="font-heading text-lg text-[var(--rw-ink)] mb-3">{t("user.reviewsTitle")}</h3>
                 <div className="space-y-3">
                   {reviews.map((rev) => (
                     <div key={rev.id} className="bg-[var(--rw-card)] rounded-2xl p-4 shadow-sm">

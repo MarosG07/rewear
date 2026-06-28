@@ -2,15 +2,17 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, Leaf, Sparkles, CreditCard } from "lucide-react";
 import { useStore } from "../store/AppStore";
+import { useI18n } from "../lib/i18n";
 
 const PACKAGES = [
   { credits: 10, price: "€2.99", tag: "" },
-  { credits: 25, price: "€5.99", tag: "Popular" },
-  { credits: 60, price: "€11.99", tag: "Best value" },
+  { credits: 25, price: "€5.99", tag: "popular" },
+  { credits: 60, price: "€11.99", tag: "bestValue" },
 ];
 
 export default function Credits() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { credits, purchaseCredits } = useStore();
   const [busy, setBusy] = useState<number | null>(null);
 
@@ -29,7 +31,7 @@ export default function Credits() {
         <button onClick={() => navigate(-1)} className="p-2 hover:bg-[var(--rw-bg)] rounded-full transition-colors">
           <ChevronLeft className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
         </button>
-        <h1 className="font-heading text-xl text-[var(--rw-ink)]">Get more credits</h1>
+        <h1 className="font-heading text-xl text-[var(--rw-ink)]">{t("credits.title")}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-6">
@@ -37,10 +39,10 @@ export default function Credits() {
         <div className="bg-gradient-to-br from-[#C2794A] to-[#b36d3f] text-white rounded-3xl p-5 shadow-sm mb-6 text-center">
           <div className="flex items-center justify-center gap-2 mb-1">
             <Leaf className="w-5 h-5" strokeWidth={1.5} />
-            <span className="text-sm opacity-90">Your balance</span>
+            <span className="text-sm opacity-90">{t("credits.balance")}</span>
           </div>
           <p className="font-heading text-4xl tabular-nums">{credits}</p>
-          <p className="text-sm opacity-90">swap credits</p>
+          <p className="text-sm opacity-90">{t("profile.swapCredits")}</p>
         </div>
 
         <div className="space-y-3">
@@ -56,17 +58,17 @@ export default function Credits() {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="font-heading text-xl text-[var(--rw-ink)]">{p.credits} credits</p>
+                  <p className="font-heading text-xl text-[var(--rw-ink)]">{p.credits} {t("common.credits")}</p>
                   {p.tag && (
                     <span className="text-[10px] font-medium bg-[#C2794A]/15 text-[#C2794A] px-2 py-0.5 rounded-full">
-                      {p.tag}
+                      {t(`credits.${p.tag}`)}
                     </span>
                   )}
                 </div>
                 <p className="text-sm text-[var(--rw-ink)]/60">{p.price}</p>
               </div>
               <div className="text-[#C2794A] font-medium text-sm shrink-0">
-                {busy === p.credits ? "Processing…" : "Buy"}
+                {busy === p.credits ? t("credits.processing") : t("credits.buy")}
               </div>
             </button>
           ))}
@@ -74,7 +76,7 @@ export default function Credits() {
 
         <div className="flex items-center gap-2 justify-center text-[var(--rw-ink)]/45 text-xs mt-6">
           <CreditCard className="w-3.5 h-3.5" strokeWidth={1.5} />
-          <span>Demo checkout — no real payment is taken.</span>
+          <span>{t("credits.demoNote")}</span>
         </div>
       </div>
     </div>

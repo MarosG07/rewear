@@ -26,6 +26,7 @@ export interface Listing {
   images: string[];
   status: "active" | "swapped";
   boosted: boolean;
+  hidden?: boolean;
   created_at: string;
   owner?: Pick<Profile, "id" | "name" | "avatar_url" | "location"> | null;
 }

@@ -5,8 +5,10 @@ import SmartImage from "../components/SmartImage";
 import type { Listing } from "../lib/types";
 import { useStore } from "../store/AppStore";
 import { listingImage, avatarFor } from "../lib/images";
+import { useI18n } from "../lib/i18n";
 
 export default function Saved() {
+  const { t } = useI18n();
   const { savedIds, getListing, toggleSaved } = useStore();
   const savedItems = savedIds
     .map((id) => getListing(id))
@@ -19,7 +21,7 @@ export default function Saved() {
 
       {/* Header */}
       <div className="bg-[var(--rw-bg)]/95 backdrop-blur-sm border-b border-[var(--rw-ink)]/10 px-4 py-3.5">
-        <h1 className="font-heading text-2xl text-[var(--rw-ink)]">Saved items</h1>
+        <h1 className="font-heading text-2xl text-[var(--rw-ink)]">{t("saved.title")}</h1>
       </div>
 
       {/* Content */}
@@ -29,15 +31,15 @@ export default function Saved() {
             <div className="w-16 h-16 rounded-full bg-[var(--rw-bg2)] flex items-center justify-center mb-4">
               <Heart className="w-7 h-7 text-[#6B7A5C]" strokeWidth={1.5} />
             </div>
-            <p className="text-[var(--rw-ink)] font-medium">Nothing saved yet</p>
+            <p className="text-[var(--rw-ink)] font-medium">{t("saved.none")}</p>
             <p className="text-[var(--rw-ink)]/60 text-sm mt-1 mb-5">
-              Tap the heart on any item to keep it here for later.
+              {t("saved.noneSub")}
             </p>
             <Link
               to="/"
               className="bg-[#C2794A] text-white px-6 py-3 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98]"
             >
-              Browse items
+              {t("saved.browse")}
             </Link>
           </div>
         ) : (

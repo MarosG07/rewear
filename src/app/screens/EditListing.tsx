@@ -7,6 +7,7 @@ import { useAuth } from "../store/AuthContext";
 import { fileToDataUrl } from "../lib/upload";
 import { listingImage } from "../lib/images";
 import { NEIGHBORHOODS } from "../data/items";
+import { useI18n } from "../lib/i18n";
 import type { Listing } from "../lib/types";
 
 const categories = ["Dress", "Shirt", "Pants", "Jacket", "Sweater", "Skirt", "Shoes", "Sneakers", "Accessories"];
@@ -16,6 +17,7 @@ const conditions = ["New", "Like New", "Good", "Worn"];
 export default function EditListing() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { session } = useAuth();
   const { getListing, loading } = useStore();
   const item = id ? getListing(id) : undefined;
@@ -23,16 +25,16 @@ export default function EditListing() {
   if (!item) {
     return (
       <div className="h-full flex items-center justify-center bg-[var(--rw-bg)]">
-        <p className="text-[var(--rw-ink)]/60">{loading ? "Loading…" : "Listing not found"}</p>
+        <p className="text-[var(--rw-ink)]/60">{loading ? t("common.loading") : t("list.notFound")}</p>
       </div>
     );
   }
   if (item.owner_id !== session?.user.id) {
     return (
       <div className="h-full flex flex-col items-center justify-center bg-[var(--rw-bg)] gap-4">
-        <p className="text-[var(--rw-ink)]">You can only edit your own listings.</p>
+        <p className="text-[var(--rw-ink)]">{t("list.onlyOwn")}</p>
         <button onClick={() => navigate(-1)} className="bg-[#C2794A] text-white px-6 py-3 rounded-2xl font-medium">
-          Go back
+          {t("list.goBack")}
         </button>
       </div>
     );
@@ -42,6 +44,7 @@ export default function EditListing() {
 
 function EditForm({ item }: { item: Listing }) {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { updateListing } = useStore();
   const [title, setTitle] = useState(item.name);
   const [description, setDescription] = useState(item.description ?? "");
@@ -57,7 +60,7 @@ function EditForm({ item }: { item: Listing }) {
   const handleFile = async (index: number, file?: File) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Please choose an image");
+      toast.error(t("toast.chooseImage"));
       return;
     }
     try {
@@ -75,7 +78,7 @@ function EditForm({ item }: { item: Listing }) {
   const handleSubmit = async () => {
     if (busy) return;
     if (!title.trim()) {
-      toast.error("Add a title");
+      toast.error(t("toast.addTitle"));
       return;
     }
     setBusy(true);
@@ -107,13 +110,13 @@ function EditForm({ item }: { item: Listing }) {
         <button onClick={() => navigate(-1)} className="p-2 hover:bg-[var(--rw-bg)] rounded-full transition-colors">
           <ChevronLeft className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
         </button>
-        <h1 className="font-heading text-xl text-[var(--rw-ink)]">Edit listing</h1>
+        <h1 className="font-heading text-xl text-[var(--rw-ink)]">{t("item.editListing")}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-5 pb-8">
         <div className="bg-[var(--rw-card)] rounded-3xl p-5 shadow-sm space-y-5">
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Title</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("list.fieldTitle")}</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -122,18 +125,18 @@ function EditForm({ item }: { item: Listing }) {
           </div>
 
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Description</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("list.description")}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              placeholder="Tell people about your item…"
+              placeholder={t("list.descPlaceholder")}
               className="w-full bg-[var(--rw-bg)] rounded-2xl px-4 py-3 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C] resize-none"
             />
           </div>
 
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Photos</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("list.photos")}</label>
             {newPhotos.filter(Boolean).length === 0 && existing.length > 0 && (
               <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-hide">
                 {existing.map((src, i) => (
@@ -141,7 +144,7 @@ function EditForm({ item }: { item: Listing }) {
                 ))}
               </div>
             )}
-            <p className="text-xs text-[var(--rw-ink)]/50 mb-2">Add new photos to replace the current ones.</p>
+            <p className="text-xs text-[var(--rw-ink)]/50 mb-2">{t("list.replacePhotos")}</p>
             <div className="grid grid-cols-3 gap-3">
               {[0, 1, 2].map((i) => (
                 <label
@@ -169,7 +172,7 @@ function EditForm({ item }: { item: Listing }) {
                   ) : (
                     <div className="text-center">
                       <Camera className="w-6 h-6 text-[var(--rw-ink)]/40 mx-auto mb-1" strokeWidth={1.5} />
-                      <span className="text-xs text-[var(--rw-ink)]/40">Add</span>
+                      <span className="text-xs text-[var(--rw-ink)]/40">{t("list.add")}</span>
                     </div>
                   )}
                   <input
@@ -184,7 +187,7 @@ function EditForm({ item }: { item: Listing }) {
           </div>
 
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Category</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("home.category")}</label>
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
               {categories.map((c) => (
                 <button key={c} onClick={() => setCategory(c)} className={chip(category === c)}>
@@ -195,7 +198,7 @@ function EditForm({ item }: { item: Listing }) {
           </div>
 
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Neighborhood</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("home.neighborhood")}</label>
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
               {NEIGHBORHOODS.map((n) => (
                 <button key={n} onClick={() => setNeighborhood(n)} className={chip(neighborhood === n)}>
@@ -206,7 +209,7 @@ function EditForm({ item }: { item: Listing }) {
           </div>
 
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Size</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("list.size")}</label>
             <div className="flex gap-2 flex-wrap">
               {sizes.map((s) => (
                 <button key={s} onClick={() => setSize(s)} className={chip(size === s)}>
@@ -217,7 +220,7 @@ function EditForm({ item }: { item: Listing }) {
           </div>
 
           <div>
-            <label className="block text-[var(--rw-ink)] font-medium mb-3">Condition</label>
+            <label className="block text-[var(--rw-ink)] font-medium mb-3">{t("home.condition")}</label>
             <div className="grid grid-cols-2 gap-2">
               {conditions.map((c) => (
                 <button
@@ -240,7 +243,7 @@ function EditForm({ item }: { item: Listing }) {
             disabled={busy}
             className="w-full bg-[#C2794A] text-white py-4 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] disabled:opacity-60"
           >
-            {busy ? "Saving…" : "Save changes"}
+            {busy ? t("list.saving") : t("list.saveChanges")}
           </button>
         </div>
       </div>

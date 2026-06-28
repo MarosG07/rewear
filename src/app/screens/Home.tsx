@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link } from "react-router";
 import { Search, MapPin, Grid3x3, Map, Leaf, Heart, PackageOpen, SlidersHorizontal, X, RotateCw } from "lucide-react";
 import BottomNav from "../components/BottomNav";
 import Logo from "../components/Logo";
 import SmartImage from "../components/SmartImage";
-import MapView from "../components/MapView";
+
+// Map view (and its tile library) is a separate chunk, only fetched when the
+// user actually switches to the map.
+const MapView = lazy(() => import("../components/MapView"));
 import AnimatedNumber from "../components/AnimatedNumber";
 import { useStore } from "../store/AppStore";
 import { listingImage, avatarFor } from "../lib/images";
@@ -193,7 +196,13 @@ export default function Home() {
       {/* Content */}
       {viewMode === "map" ? (
         <div className="flex-1 overflow-hidden px-4 py-4">
-          <MapView listings={filtered} />
+          <Suspense
+            fallback={
+              <div className="w-full h-full rounded-3xl bg-[var(--rw-bg2)] animate-pulse" />
+            }
+          >
+            <MapView listings={filtered} />
+          </Suspense>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto overscroll-contain pb-8 px-4">
