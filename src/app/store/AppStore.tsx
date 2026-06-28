@@ -72,6 +72,8 @@ interface StoreValue {
   toggleSaved: (id: string) => Promise<void>;
 
   hasRequested: (listingId: string) => boolean;
+  myThreadFor: (listingId: string) => Conversation | undefined;
+  inquire: (listing: Listing) => Promise<string | null>;
   requestSwap: (listing: Listing, offeredListingId?: string) => Promise<void>;
   acceptSwap: (conversationId: string) => Promise<void>;
   declineSwap: (conversationId: string) => Promise<void>;
@@ -317,8 +319,47 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   // ── swaps ─────────────────────────────────────────────────────────────
+  // A listing counts as "requested" once there's a real (non-inquiry) thread.
   const hasRequested = (listingId: string) =>
-    conversations.some((c) => c.listing_id === listingId && c.requester_id === userId);
+    conversations.some(
+      (c) => c.listing_id === listingId && c.requester_id === userId && c.status !== "inquiry",
+    );
+
+  // Any existing thread I started on this listing (inquiry or request).
+  const myThreadFor = (listingId: string) =>
+    conversations.find((c) => c.listing_id === listingId && c.requester_id === userId);
+
+  // "Ask before you swap" — open a free chat with the owner without spending
+  // credits or making a formal request. Returns the conversation id.
+  const inquire: StoreValue["inquire"] = async (listing) => {
+    if (listing.owner_id === userId) {
+      toast(t("st.ownListing"), { description: t("st.ownListingD") });
+      return null;
+    }
+    const existing = myThreadFor(listing.id);
+    if (existing) return existing.id; // already chatting — just open it
+    const { data, error } = await supabase
+      .from("conversations")
+      .insert({
+        listing_id: listing.id,
+        requester_id: userId,
+        owner_id: listing.owner_id,
+        status: "inquiry",
+      })
+      .select("id")
+      .single();
+    if (error) {
+      toast.error(t("st.startFail"));
+      return null;
+    }
+    await supabase.from("messages").insert({
+      conversation_id: data.id,
+      sender_id: userId,
+      body: `Hi! I have a question about your ${listing.name}. 👋`,
+    });
+    await loadConversations();
+    return data.id;
+  };
 
   const requestSwap = async (listing: Listing, offeredListingId?: string) => {
     if (listing.owner_id === userId) {
@@ -329,29 +370,50 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       toast(t("st.alreadyRequested"), { description: listing.name });
       return;
     }
+    if (listing.reserved) {
+      toast(t("st.reserved"), { description: t("st.reservedD") });
+      return;
+    }
     if (!(await changeCredits(-CREDIT_RULES.REQUEST_SWAP, t("st.requestedSwap", { name: listing.name })))) {
       return;
     }
-    const { data, error } = await supabase
-      .from("conversations")
-      .insert({
-        listing_id: listing.id,
-        requester_id: userId,
-        owner_id: listing.owner_id,
-        offered_listing_id: offeredListingId ?? null,
-      })
-      .select("id")
-      .single();
-    if (error) {
-      toast.error(t("st.startFail"));
-      await changeCredits(CREDIT_RULES.REQUEST_SWAP, t("st.refund")); // give it back
-      return;
+    // If I already opened a free inquiry on this item, upgrade it in place
+    // (the unique (listing, requester) constraint means we reuse that row).
+    const existing = myThreadFor(listing.id);
+    let convId = existing?.id ?? null;
+    if (existing) {
+      const { error } = await supabase
+        .from("conversations")
+        .update({ status: "pending", offered_listing_id: offeredListingId ?? null })
+        .eq("id", existing.id);
+      if (error) {
+        toast.error(t("st.startFail"));
+        await changeCredits(CREDIT_RULES.REQUEST_SWAP, t("st.refund"));
+        return;
+      }
+    } else {
+      const { data, error } = await supabase
+        .from("conversations")
+        .insert({
+          listing_id: listing.id,
+          requester_id: userId,
+          owner_id: listing.owner_id,
+          offered_listing_id: offeredListingId ?? null,
+        })
+        .select("id")
+        .single();
+      if (error) {
+        toast.error(t("st.startFail"));
+        await changeCredits(CREDIT_RULES.REQUEST_SWAP, t("st.refund")); // give it back
+        return;
+      }
+      convId = data.id;
     }
     const offered = offeredListingId ? listings.find((l) => l.id === offeredListingId) : null;
     const body = offered
       ? `Hi! I'd love to swap my ${offered.name} for your ${listing.name}. 👋`
       : `Hi! I'd love to swap for your ${listing.name}. 👋`;
-    await supabase.from("messages").insert({ conversation_id: data.id, sender_id: userId, body });
+    await supabase.from("messages").insert({ conversation_id: convId, sender_id: userId, body });
     await loadConversations();
   };
 
@@ -444,9 +506,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   const proposeMeetup = async (conversationId: string, when: string, place: string) => {
+    // `meetup_by` records the proposer so the OTHER side is the one who confirms.
     const { error } = await supabase
       .from("conversations")
-      .update({ meetup_at: when, meetup_place: place || null, meetup_confirmed: false })
+      .update({ meetup_at: when, meetup_place: place || null, meetup_confirmed: false, meetup_by: userId })
       .eq("id", conversationId);
     if (error) {
       toast.error(t("st.proposeFail"));
@@ -462,6 +525,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   const confirmMeetup = async (conversationId: string) => {
+    const convo = conversations.find((c) => c.id === conversationId);
+    // Only the participant who did NOT propose can confirm — that's the "both
+    // sides agree" handshake.
+    if (convo && convo.meetup_by === userId) {
+      toast(t("st.cantConfirmOwn"), { description: t("st.cantConfirmOwnD") });
+      return;
+    }
     const { error } = await supabase
       .from("conversations")
       .update({ meetup_confirmed: true })
@@ -682,6 +752,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     isSaved,
     toggleSaved,
     hasRequested,
+    myThreadFor,
+    inquire,
     requestSwap,
     acceptSwap,
     declineSwap,

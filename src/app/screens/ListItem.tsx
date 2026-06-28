@@ -213,6 +213,16 @@ export default function ListItem() {
                 </button>
               ))}
             </div>
+            <button
+              onClick={() => setSelectedSize("One Size")}
+              className={`mt-2 w-full py-2.5 rounded-xl text-sm font-medium transition-all ${
+                selectedSize === "One Size"
+                  ? "bg-[#6B7A5C] text-white shadow-sm"
+                  : "bg-[var(--rw-bg)] text-[var(--rw-ink)] hover:bg-[var(--rw-bg2)]"
+              }`}
+            >
+              {t("list.oneSize")}
+            </button>
           </div>
 
           {/* Condition */}

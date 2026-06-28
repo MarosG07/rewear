@@ -27,11 +27,13 @@ export interface Listing {
   status: "active" | "swapped";
   boosted: boolean;
   hidden?: boolean;
+  /** Locked to a live swap — visible but not requestable/offerable. */
+  reserved?: boolean;
   created_at: string;
   owner?: Pick<Profile, "id" | "name" | "avatar_url" | "location"> | null;
 }
 
-export type SwapStatus = "pending" | "accepted" | "declined" | "confirmed" | "completed";
+export type SwapStatus = "inquiry" | "pending" | "accepted" | "declined" | "confirmed" | "completed";
 
 export interface Conversation {
   id: string;
@@ -46,6 +48,8 @@ export interface Conversation {
   meetup_at: string | null;
   meetup_place: string | null;
   meetup_confirmed: boolean;
+  /** Who proposed the current meetup; the other participant confirms it. */
+  meetup_by: string | null;
   created_at: string;
   listing?: Pick<Listing, "id" | "name" | "image_url"> | null;
   offered?: Pick<Listing, "id" | "name" | "image_url"> | null;

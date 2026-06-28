@@ -331,6 +331,27 @@ const en: Dict = {
   "st.wishMatch": "New match for: {title}",
   "st.wishMatchD": "Someone just listed something you're looking for.",
   "st.viewItem": "View item",
+  "st.reserved": "Item reserved",
+  "st.reservedD": "It's tied to another swap right now.",
+  "st.cantConfirmOwn": "Waiting on them",
+  "st.cantConfirmOwnD": "The other person confirms your proposal.",
+  // ask before you swap
+  "item.askQuestion": "Ask a question",
+  "item.openChat": "Open chat",
+  "item.reserved": "Reserved",
+  "item.reservedNote": "This item is reserved for another swap right now.",
+  "inbox.statusInquiry": "Question",
+  "inbox.requestSwapNow": "Request swap",
+  // meetup
+  "inbox.meetupDate": "Date & time",
+  "inbox.meetupPlaceLabel": "Place",
+  "inbox.placeRequired": "Add a place to meet first.",
+  "inbox.waitingConfirm": "Waiting for {name} to confirm…",
+  // list / profile / auth
+  "list.oneSize": "One Size",
+  "auth.showPassword": "Show password",
+  "auth.hidePassword": "Hide password",
+  "profile.addPhoto": "Add a profile photo",
 };
 
 const es: Dict = {
@@ -631,6 +652,24 @@ const es: Dict = {
   "st.wishMatch": "Nueva coincidencia para: {title}",
   "st.wishMatchD": "Alguien acaba de publicar algo que buscas.",
   "st.viewItem": "Ver prenda",
+  "st.reserved": "Prenda reservada",
+  "st.reservedD": "Ahora mismo está en otro intercambio.",
+  "st.cantConfirmOwn": "Esperando a la otra persona",
+  "st.cantConfirmOwnD": "La otra persona confirma tu propuesta.",
+  "item.askQuestion": "Hacer una pregunta",
+  "item.openChat": "Abrir chat",
+  "item.reserved": "Reservada",
+  "item.reservedNote": "Esta prenda está reservada para otro intercambio ahora mismo.",
+  "inbox.statusInquiry": "Pregunta",
+  "inbox.requestSwapNow": "Pedir intercambio",
+  "inbox.meetupDate": "Fecha y hora",
+  "inbox.meetupPlaceLabel": "Lugar",
+  "inbox.placeRequired": "Añade primero un lugar de encuentro.",
+  "inbox.waitingConfirm": "Esperando a que {name} confirme…",
+  "list.oneSize": "Talla única",
+  "auth.showPassword": "Mostrar contraseña",
+  "auth.hidePassword": "Ocultar contraseña",
+  "profile.addPhoto": "Añade una foto de perfil",
 };
 
 const hu: Dict = {
@@ -931,6 +970,24 @@ const hu: Dict = {
   "st.wishMatch": "Új találat: {title}",
   "st.wishMatchD": "Valaki épp feltöltött valamit, amit keresel.",
   "st.viewItem": "Megnézem",
+  "st.reserved": "Lefoglalt ruha",
+  "st.reservedD": "Jelenleg egy másik cseréhez van kötve.",
+  "st.cantConfirmOwn": "Rájuk várunk",
+  "st.cantConfirmOwnD": "A másik fél erősíti meg a javaslatodat.",
+  "item.askQuestion": "Kérdezek",
+  "item.openChat": "Csevegés megnyitása",
+  "item.reserved": "Lefoglalva",
+  "item.reservedNote": "Ez a ruha jelenleg egy másik cseréhez van lefoglalva.",
+  "inbox.statusInquiry": "Kérdés",
+  "inbox.requestSwapNow": "Csere kérése",
+  "inbox.meetupDate": "Dátum és idő",
+  "inbox.meetupPlaceLabel": "Helyszín",
+  "inbox.placeRequired": "Előbb adj meg egy találkozóhelyet.",
+  "inbox.waitingConfirm": "Várjuk, hogy {name} megerősítse…",
+  "list.oneSize": "Egy méret",
+  "auth.showPassword": "Jelszó megjelenítése",
+  "auth.hidePassword": "Jelszó elrejtése",
+  "profile.addPhoto": "Adj hozzá profilképet",
 };
 
 const dicts: Record<Lang, Dict> = { en, es, hu };
