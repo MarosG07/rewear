@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import Logo from "../components/Logo";
 import { useAuth } from "../store/AuthContext";
@@ -11,6 +12,7 @@ export default function Auth() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
@@ -42,7 +44,10 @@ export default function Auth() {
       {/* Grain texture */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=')]"></div>
 
-      <div className="flex-1 flex flex-col justify-center px-6">
+      {/* Scrollable + min-h-full so the form centers when there's room but can
+          scroll up above the on-screen keyboard on small screens. */}
+      <div className="flex-1 overflow-y-auto overscroll-contain px-6">
+        <div className="min-h-full flex flex-col justify-center py-8">
         <div className="flex flex-col items-center mb-8">
           <Logo size="large" showText={true} />
           <p className="text-[var(--rw-ink)]/60 text-sm mt-3 tracking-wide">
@@ -73,14 +78,28 @@ export default function Auth() {
             autoComplete="email"
             className="w-full bg-[var(--rw-bg)] rounded-2xl px-4 py-3 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
           />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder={t("auth.password")}
-            autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            className="w-full bg-[var(--rw-bg)] rounded-2xl px-4 py-3 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t("auth.password")}
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              className="w-full bg-[var(--rw-bg)] rounded-2xl px-4 py-3 pr-12 text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-[var(--rw-ink)]/45 hover:text-[var(--rw-ink)] transition-colors"
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" strokeWidth={1.5} />
+              ) : (
+                <Eye className="w-5 h-5" strokeWidth={1.5} />
+              )}
+            </button>
+          </div>
 
           <button
             type="submit"
@@ -97,6 +116,7 @@ export default function Auth() {
         >
           {mode === "signin" ? t("auth.newHere") : t("auth.haveAccount")}
         </button>
+        </div>
       </div>
     </div>
   );

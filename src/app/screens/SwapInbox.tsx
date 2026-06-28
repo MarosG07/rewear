@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { ChevronLeft, Check, MessageSquare, Send, Calendar, Gift, CalendarPlus, Star } from "lucide-react";
+import { toast } from "sonner";
 import BottomNav from "../components/BottomNav";
 import { supabase } from "../lib/supabase";
-import { useStore } from "../store/AppStore";
+import { useStore, CREDIT_RULES } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
 import { avatarFor, listingImage } from "../lib/images";
 import { useI18n } from "../lib/i18n";
 import type { Conversation, Message, SwapStatus } from "../lib/types";
 
 const statusKey: Record<SwapStatus, string> = {
+  inquiry: "inbox.statusInquiry",
   pending: "inbox.statusRequested",
   accepted: "inbox.statusAccepted",
   confirmed: "inbox.statusMeetup",
@@ -17,6 +19,7 @@ const statusKey: Record<SwapStatus, string> = {
   declined: "inbox.statusDeclined",
 };
 const statusStyle: Record<SwapStatus, string> = {
+  inquiry: "bg-[var(--rw-ink)]/8 text-[var(--rw-ink)]/60",
   pending: "bg-[#C2794A]/10 text-[#C2794A]",
   accepted: "bg-[#6B7A5C]/15 text-[#6B7A5C]",
   confirmed: "bg-[#6B7A5C]/15 text-[#6B7A5C]",
@@ -33,12 +36,22 @@ export default function SwapInbox() {
   const { session } = useAuth();
   const myId = session?.user.id;
   const { conversations } = useStore();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Allow deep-linking straight to a thread, e.g. /inbox?c=<id> from an item.
+  const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get("c"));
 
   const chat = selectedId ? conversations.find((c) => c.id === selectedId) : null;
 
+  const closeChat = () => {
+    setSelectedId(null);
+    if (searchParams.has("c")) {
+      searchParams.delete("c");
+      setSearchParams(searchParams, { replace: true });
+    }
+  };
+
   if (chat) {
-    return <ChatView key={chat.id} chat={chat} myId={myId} onBack={() => setSelectedId(null)} />;
+    return <ChatView key={chat.id} chat={chat} myId={myId} onBack={closeChat} />;
   }
 
   return (
@@ -112,9 +125,12 @@ export default function SwapInbox() {
 function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; onBack: () => void }) {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { acceptSwap, declineSwap, markComplete, proposeMeetup, confirmMeetup } = useStore();
+  const { acceptSwap, declineSwap, markComplete, proposeMeetup, confirmMeetup, requestSwap, getListing } = useStore();
   const partner = partnerOf(chat, myId);
   const isOwner = chat.owner_id === myId;
+  const isRequester = chat.requester_id === myId;
+  // The person who proposed the current meetup can't also confirm it.
+  const iProposedMeetup = chat.meetup_by === myId;
   const iCompleted = chat.requester_id === myId ? chat.requester_completed : chat.owner_completed;
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
@@ -172,6 +188,10 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
 
   const submitMeetup = () => {
     if (!meetupWhen) return;
+    if (!meetupPlace.trim()) {
+      toast.error(t("inbox.placeRequired"));
+      return;
+    }
     proposeMeetup(chat.id, new Date(meetupWhen).toISOString(), meetupPlace.trim());
     setShowMeetup(false);
     setMeetupWhen("");
@@ -220,16 +240,22 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
       {/* Meetup banner */}
       {meetupNice && (
         <div className={`px-4 py-2.5 flex items-center justify-between gap-2 shrink-0 ${chat.meetup_confirmed ? "bg-[#6B7A5C] text-white" : "bg-[#C2794A]/15 text-[var(--rw-ink)]"}`}>
-          <div className="flex items-center gap-2 text-sm">
-            <Calendar className="w-4 h-4" strokeWidth={1.5} />
-            <span className="font-medium">{meetupNice}{chat.meetup_place ? ` · ${chat.meetup_place}` : ""}</span>
+          <div className="flex items-center gap-2 text-sm min-w-0">
+            <Calendar className="w-4 h-4 shrink-0" strokeWidth={1.5} />
+            <span className="font-medium truncate">{meetupNice}{chat.meetup_place ? ` · ${chat.meetup_place}` : ""}</span>
           </div>
-          {!chat.meetup_confirmed && inProgress && (
+          {/* Only the person who did NOT propose confirms — that's the agreement. */}
+          {!chat.meetup_confirmed && inProgress && !iProposedMeetup && (
             <button onClick={() => confirmMeetup(chat.id)} className="bg-[#6B7A5C] text-white text-xs font-medium px-3 py-1.5 rounded-full shrink-0">
               {t("inbox.confirm")}
             </button>
           )}
-          {chat.meetup_confirmed && <Check className="w-4 h-4" strokeWidth={2} />}
+          {!chat.meetup_confirmed && inProgress && iProposedMeetup && (
+            <span className="text-xs text-[var(--rw-ink)]/60 shrink-0">
+              {t("inbox.waitingConfirm", { name: partner?.name?.split(" ")[0] ?? "them" })}
+            </span>
+          )}
+          {chat.meetup_confirmed && <Check className="w-4 h-4 shrink-0" strokeWidth={2} />}
         </div>
       )}
 
@@ -251,7 +277,20 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
 
       {/* Action area */}
       <div className="bg-[var(--rw-card)] border-t border-[var(--rw-ink)]/10 px-4 pt-3 shrink-0">
-        {chat.status === "pending" ? (
+        {chat.status === "inquiry" ? (
+          isRequester ? (
+            <button
+              onClick={() => {
+                const l = chat.listing_id ? getListing(chat.listing_id) : undefined;
+                if (l) requestSwap(l);
+              }}
+              className="w-full bg-[#C2794A] text-white py-3 rounded-2xl font-medium flex items-center justify-center gap-2 mb-3 hover:bg-[#b36d3f] transition-all active:scale-[0.98]"
+            >
+              <span>{t("inbox.requestSwapNow")}</span>
+              <span className="text-white/80 text-sm">−{CREDIT_RULES.REQUEST_SWAP} {t("common.credits")}</span>
+            </button>
+          ) : null
+        ) : chat.status === "pending" ? (
           isOwner ? (
             <div className="flex gap-2 mb-3">
               <button
@@ -295,21 +334,27 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
         ) : showMeetup ? (
           <div className="bg-[var(--rw-bg)] rounded-2xl p-3 mb-3 space-y-2">
             <p className="text-sm font-medium text-[var(--rw-ink)]">{t("inbox.proposeMeetup")}</p>
-            <input
-              type="datetime-local"
-              value={meetupWhen}
-              onChange={(e) => setMeetupWhen(e.target.value)}
-              className="w-full bg-[var(--rw-card)] rounded-xl px-3 py-2 text-sm text-[var(--rw-ink)] focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
-            />
-            <input
-              type="text"
-              value={meetupPlace}
-              onChange={(e) => setMeetupPlace(e.target.value)}
-              placeholder={t("inbox.placePlaceholder")}
-              className="w-full bg-[var(--rw-card)] rounded-xl px-3 py-2 text-sm text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
-            />
-            <div className="flex gap-2">
-              <button onClick={submitMeetup} disabled={!meetupWhen} className="flex-1 bg-[#6B7A5C] text-white py-2 rounded-xl text-sm font-medium disabled:opacity-50">
+            <div>
+              <label className="block text-xs font-medium text-[var(--rw-ink)]/70 mb-1">{t("inbox.meetupDate")}</label>
+              <input
+                type="datetime-local"
+                value={meetupWhen}
+                onChange={(e) => setMeetupWhen(e.target.value)}
+                className="w-full bg-[var(--rw-card)] rounded-xl px-3 py-2 text-sm text-[var(--rw-ink)] focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[var(--rw-ink)]/70 mb-1">{t("inbox.meetupPlaceLabel")}</label>
+              <input
+                type="text"
+                value={meetupPlace}
+                onChange={(e) => setMeetupPlace(e.target.value)}
+                placeholder={t("inbox.placePlaceholder")}
+                className="w-full bg-[var(--rw-card)] rounded-xl px-3 py-2 text-sm text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
+              />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={submitMeetup} disabled={!meetupWhen || !meetupPlace.trim()} className="flex-1 bg-[#6B7A5C] text-white py-2 rounded-xl text-sm font-medium disabled:opacity-50">
                 {t("inbox.propose")}
               </button>
               <button onClick={() => setShowMeetup(false)} className="px-4 bg-[var(--rw-card)] text-[var(--rw-ink)] py-2 rounded-xl text-sm font-medium">

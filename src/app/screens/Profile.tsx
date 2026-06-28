@@ -29,11 +29,22 @@ export default function Profile() {
         {/* Profile header */}
         <div className="px-4 pt-5 pb-6">
           <div className="flex items-start gap-4 mb-6">
-            <img
-              src={avatarFor(profile?.name, profile?.avatar_url)}
-              alt={profile?.name ?? "You"}
-              className="w-20 h-20 rounded-full shadow-sm"
-            />
+            <button
+              onClick={() => setEditing(true)}
+              className="relative shrink-0"
+              aria-label={profile?.avatar_url ? t("profile.edit") : t("profile.addPhoto")}
+            >
+              <img
+                src={avatarFor(profile?.name, profile?.avatar_url)}
+                alt={profile?.name ?? "You"}
+                className="w-20 h-20 rounded-full shadow-sm object-cover"
+              />
+              {!profile?.avatar_url && (
+                <span className="absolute bottom-0 right-0 w-7 h-7 bg-[#C2794A] rounded-full flex items-center justify-center border-2 border-[var(--rw-bg)] shadow-sm">
+                  <Plus className="w-4 h-4 text-white" strokeWidth={2.5} />
+                </span>
+              )}
+            </button>
             <div className="flex-1">
               <div className="flex items-start justify-between gap-2">
                 <h1 className="font-heading text-2xl text-[var(--rw-ink)] mb-1">

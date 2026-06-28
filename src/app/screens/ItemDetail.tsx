@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router";
-import { ChevronLeft, Heart, MapPin, Check, Trash2, RotateCcw, Pencil, X, ChevronRight, Flag } from "lucide-react";
+import { ChevronLeft, Heart, MapPin, Check, Trash2, RotateCcw, Pencil, X, ChevronRight, Flag, Lock, MessageCircle } from "lucide-react";
 import SmartImage from "../components/SmartImage";
 import { useStore, CREDIT_RULES } from "../store/AppStore";
 import { useAuth } from "../store/AuthContext";
@@ -19,6 +19,8 @@ export default function ItemDetail() {
     isSaved,
     toggleSaved,
     hasRequested,
+    myThreadFor,
+    inquire,
     requestSwap,
     deleteListing,
     setListingStatus,
@@ -50,8 +52,10 @@ export default function ItemDetail() {
   const saved = isSaved(item.id);
   const requested = hasRequested(item.id);
   const isOwn = item.owner_id === session?.user.id;
+  const thread = myThreadFor(item.id);
   const images = item.images?.length ? item.images : [listingImage(item.image_url)];
-  const myActive = myListings.filter((l) => l.status === "active");
+  // Can't offer an item that's already locked to another swap.
+  const myActive = myListings.filter((l) => l.status === "active" && !l.reserved);
 
   return (
     <div className="h-full flex flex-col bg-[var(--rw-bg)] overflow-hidden relative">
@@ -183,6 +187,11 @@ export default function ItemDetail() {
                   <Check className="w-5 h-5" strokeWidth={2} />
                   {t("item.swapRequested")}
                 </button>
+              ) : item.reserved ? (
+                <div className="w-full bg-[var(--rw-card)] text-[var(--rw-ink)]/60 py-4 rounded-2xl font-medium border border-[var(--rw-ink)]/15 flex items-center justify-center gap-2">
+                  <Lock className="w-5 h-5" strokeWidth={1.5} />
+                  {t("item.reserved")}
+                </div>
               ) : (
                 <button
                   onClick={() => {
@@ -194,6 +203,30 @@ export default function ItemDetail() {
                   <span>{t("item.requestSwap")}</span>
                   <span className="text-white/80 text-sm">−{CREDIT_RULES.REQUEST_SWAP} {t("common.credits")}</span>
                 </button>
+              )}
+              {/* Ask before you swap — free chat with the owner. */}
+              {thread ? (
+                <button
+                  onClick={() => navigate(`/inbox?c=${thread.id}`)}
+                  className="w-full py-4 rounded-2xl font-medium border border-[var(--rw-ink)]/20 text-[var(--rw-ink)] bg-transparent hover:bg-[var(--rw-card)] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="w-5 h-5" strokeWidth={1.5} />
+                  {t("item.openChat")}
+                </button>
+              ) : (
+                <button
+                  onClick={async () => {
+                    const cid = await inquire(item);
+                    if (cid) navigate(`/inbox?c=${cid}`);
+                  }}
+                  className="w-full py-4 rounded-2xl font-medium border border-[var(--rw-ink)]/20 text-[var(--rw-ink)] bg-transparent hover:bg-[var(--rw-card)] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="w-5 h-5" strokeWidth={1.5} />
+                  {t("item.askQuestion")}
+                </button>
+              )}
+              {item.reserved && (
+                <p className="text-xs text-center text-[var(--rw-ink)]/45">{t("item.reservedNote")}</p>
               )}
               <button
                 onClick={() => {

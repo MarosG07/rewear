@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../store/AuthContext";
+import { useStore } from "../store/AppStore";
 import { fileToDataUrl, uploadImage } from "../lib/upload";
 import { avatarFor } from "../lib/images";
 import { useI18n } from "../lib/i18n";
@@ -9,6 +10,7 @@ import { useI18n } from "../lib/i18n";
 export default function ProfileEditSheet({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
   const { profile, session, updateProfile } = useAuth();
+  const { reload } = useStore();
   const [name, setName] = useState(profile?.name ?? "");
   const [location, setLocation] = useState(profile?.location ?? "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -50,6 +52,9 @@ export default function ProfileEditSheet({ onClose }: { onClose: () => void }) {
       toast.error(err);
       return;
     }
+    // Refresh the marketplace so the new photo replaces the old one everywhere
+    // it's shown denormalized (your listings, chat threads), not just here.
+    if (avatar_url) void reload();
     toast.success(t("pe.updated"));
     onClose();
   };

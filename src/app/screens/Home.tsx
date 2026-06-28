@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from "react";
 import { Link } from "react-router";
-import { Search, MapPin, Grid3x3, Map, Leaf, Heart, PackageOpen, SlidersHorizontal, X, RotateCw } from "lucide-react";
+import { Search, MapPin, Grid3x3, Map, Leaf, Heart, PackageOpen, SlidersHorizontal, X, RotateCw, Lock } from "lucide-react";
 import BottomNav from "../components/BottomNav";
 import Logo from "../components/Logo";
 import SmartImage from "../components/SmartImage";
@@ -257,13 +257,19 @@ export default function Home() {
                         alt={item.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
-                      {item.category && (
-                        <div className="absolute top-3 left-3">
+                      <div className="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
+                        {item.category && (
                           <span className="bg-[var(--rw-card)]/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium text-[var(--rw-ink)]">
                             {item.category}
                           </span>
-                        </div>
-                      )}
+                        )}
+                        {item.reserved && (
+                          <span className="bg-[var(--rw-ink)]/75 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-medium text-white flex items-center gap-1">
+                            <Lock className="w-3 h-3" strokeWidth={2} />
+                            {t("item.reserved")}
+                          </span>
+                        )}
+                      </div>
                       <button
                         onClick={(e) => {
                           e.preventDefault();
