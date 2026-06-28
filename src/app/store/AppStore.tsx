@@ -15,6 +15,7 @@ import { uploadImage } from "../lib/upload";
 import { router } from "../routes";
 import type { Conversation, Listing, WishItem } from "../lib/types";
 import { useAuth } from "./AuthContext";
+import { useI18n } from "../lib/i18n";
 
 /**
  * Supabase-backed data layer: the shared marketplace (listings), the user's
@@ -102,6 +103,7 @@ interface StoreValue {
 const StoreContext = createContext<StoreValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  const { t } = useI18n();
   const { session, profile, patchProfile, refreshProfile } = useAuth();
   const userId = session?.user.id ?? "";
 
@@ -213,7 +215,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             typeof Notification !== "undefined" &&
             Notification.permission === "granted"
           ) {
-            new Notification(`New message from ${who}`, { body: msg.body, icon: "/pwa-192.png" });
+            new Notification(t("st.newMessage", { name: who }), { body: msg.body, icon: "/pwa-192.png" });
           } else {
             toast(`💬 ${who}`, { description: msg.body.slice(0, 60) });
           }
@@ -227,34 +229,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const enableNotifications = async () => {
     if (typeof Notification === "undefined") {
-      toast.error("Notifications aren't supported here");
+      toast.error(t("st.notifUnsupported"));
       return;
     }
     const perm = await Notification.requestPermission();
     setNotificationsEnabled(perm === "granted");
-    if (perm === "granted") toast.success("Notifications on");
-    else toast("Notifications blocked", { description: "Allow them in your browser settings." });
+    if (perm === "granted") toast.success(t("st.notifOn"));
+    else toast(t("st.notifBlocked"), { description: t("st.notifBlockedD") });
   };
 
   // ── credit helper ─────────────────────────────────────────────────────
   const changeCredits = async (delta: number, label: string): Promise<boolean> => {
     const current = profile?.credits ?? 0;
     if (delta < 0 && current + delta < 0) {
-      toast.error("Not enough credits", {
-        description: `You need ${-delta} credits.`,
-        action: { label: "Get more", onClick: () => router.navigate("/credits") },
+      toast.error(t("st.notEnough"), {
+        description: t("st.notEnoughD", { n: -delta }),
+        action: { label: t("st.getMore"), onClick: () => router.navigate("/credits") },
       });
       return false;
     }
     const next = current + delta;
     const { error } = await supabase.from("profiles").update({ credits: next }).eq("id", userId);
     if (error) {
-      toast.error("Couldn't update credits");
+      toast.error(t("st.creditsFail"));
       return false;
     }
     patchProfile({ credits: next });
-    if (delta >= 0) toast.success(`+${delta} credits`, { description: label });
-    else toast(`−${-delta} credits`, { description: label });
+    if (delta >= 0) toast.success(`+${delta} ${t("common.credits")}`, { description: label });
+    else toast(`−${-delta} ${t("common.credits")}`, { description: label });
     return true;
   };
 
@@ -285,14 +287,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const requestSwap = async (listing: Listing, offeredListingId?: string) => {
     if (listing.owner_id === userId) {
-      toast("That's your own listing", { description: "You can't swap with yourself." });
+      toast(t("st.ownListing"), { description: t("st.ownListingD") });
       return;
     }
     if (hasRequested(listing.id)) {
-      toast("Swap already requested", { description: listing.name });
+      toast(t("st.alreadyRequested"), { description: listing.name });
       return;
     }
-    if (!(await changeCredits(-CREDIT_RULES.REQUEST_SWAP, `Requested swap · ${listing.name}`))) {
+    if (!(await changeCredits(-CREDIT_RULES.REQUEST_SWAP, t("st.requestedSwap", { name: listing.name })))) {
       return;
     }
     const { data, error } = await supabase
@@ -306,8 +308,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .select("id")
       .single();
     if (error) {
-      toast.error("Couldn't start the swap");
-      await changeCredits(CREDIT_RULES.REQUEST_SWAP, "Refund"); // give it back
+      toast.error(t("st.startFail"));
+      await changeCredits(CREDIT_RULES.REQUEST_SWAP, t("st.refund")); // give it back
       return;
     }
     const offered = offeredListingId ? listings.find((l) => l.id === offeredListingId) : null;
@@ -326,7 +328,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .update({ status: "accepted" })
       .eq("id", conversationId);
     if (error) {
-      toast.error("Couldn't accept the swap");
+      toast.error(t("st.acceptFail"));
       return;
     }
     await supabase.from("messages").insert({
@@ -334,7 +336,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       sender_id: userId,
       body: "✅ Accepted the swap — let's arrange a meetup!",
     });
-    toast.success("Swap accepted");
+    toast.success(t("st.accepted"));
     await loadConversations();
   };
 
@@ -346,7 +348,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .update({ status: "declined" })
       .eq("id", conversationId);
     if (error) {
-      toast.error("Couldn't decline the swap");
+      toast.error(t("st.declineFail"));
       return;
     }
     await supabase.from("messages").insert({
@@ -354,7 +356,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       sender_id: userId,
       body: "Declined this swap request.",
     });
-    toast("Swap declined");
+    toast(t("st.declinedToast"));
     await loadConversations();
   };
 
@@ -364,17 +366,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const convo = conversations.find((c) => c.id === conversationId);
     if (!convo || convo.status === "completed") return;
     if (convo.status === "pending" || convo.status === "declined") {
-      toast("Not ready yet", { description: "The owner needs to accept the swap first." });
+      toast(t("st.notReady"), { description: t("st.notReadyD") });
       return;
     }
     const { data, error } = await supabase.rpc("mark_swap_complete", { conv_id: conversationId });
     if (error) {
-      toast.error("Couldn't update the swap");
+      toast.error(t("st.updateSwapFail"));
       return;
     }
     await Promise.all([loadConversations(), refreshProfile()]);
     if (data === "completed") {
-      toast.success(`+${CREDIT_RULES.COMPLETE_SWAP} credits`, { description: "Swap completed 🎉" });
+      toast.success(`+${CREDIT_RULES.COMPLETE_SWAP} ${t("common.credits")}`, { description: t("st.swapCompleted") });
       confetti({
         particleCount: 80,
         spread: 70,
@@ -382,7 +384,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         colors: ["#C2794A", "#6B7A5C", "#E8DDD0"],
       });
     } else {
-      toast("Marked complete", { description: "Waiting for the other person to confirm." });
+      toast(t("st.markedComplete"), { description: t("st.markedCompleteD") });
     }
   };
 
@@ -398,11 +400,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       comment: comment.trim() || null,
     });
     if (error) {
-      toast.error("Couldn't submit review");
+      toast.error(t("st.reviewFail"));
       return;
     }
     await supabase.from("conversations").update({ rated: true }).eq("id", conversationId);
-    await changeCredits(CREDIT_RULES.FIVE_STAR, "Left a review");
+    await changeCredits(CREDIT_RULES.FIVE_STAR, t("st.leftReview"));
     await loadConversations();
   };
 
@@ -412,7 +414,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .update({ meetup_at: when, meetup_place: place || null, meetup_confirmed: false })
       .eq("id", conversationId);
     if (error) {
-      toast.error("Couldn't propose meetup");
+      toast.error(t("st.proposeFail"));
       return;
     }
     const nice = new Date(when).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
@@ -430,7 +432,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .update({ meetup_confirmed: true })
       .eq("id", conversationId);
     if (error) {
-      toast.error("Couldn't confirm meetup");
+      toast.error(t("st.confirmFail"));
       return;
     }
     await supabase.from("messages").insert({
@@ -438,7 +440,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       sender_id: userId,
       body: "✅ Confirmed the meetup — see you there!",
     });
-    toast.success("Meetup confirmed");
+    toast.success(t("st.meetupConfirmed"));
     await loadConversations();
   };
 
@@ -450,7 +452,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (url) images.push(url);
     }
     if ((input.imageDataUrls?.length ?? 0) > 0 && images.length === 0) {
-      toast.error("Photo upload failed", { description: "Listing saved without it." });
+      toast.error(t("st.photoFail"), { description: t("st.photoFailD") });
     }
 
     const { error } = await supabase.from("listings").insert({
@@ -465,10 +467,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       images,
     });
     if (error) {
-      toast.error("Couldn't create the listing");
+      toast.error(t("st.createFail"));
       return false;
     }
-    await changeCredits(CREDIT_RULES.LIST_ITEM, `Listed “${input.name}”`);
+    await changeCredits(CREDIT_RULES.LIST_ITEM, t("st.listed", { name: input.name }));
     await loadListings();
     return true;
   };
@@ -499,10 +501,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     const { error } = await supabase.from("listings").update(patch).eq("id", listingId);
     if (error) {
-      toast.error("Couldn't update listing");
+      toast.error(t("st.updateListingFail"));
       return false;
     }
-    toast.success("Listing updated");
+    toast.success(t("st.listingUpdated"));
     await loadListings();
     return true;
   };
@@ -510,10 +512,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const boostListing = async (listingId: string) => {
     const target = listings.find((l) => l.id === listingId);
     if (target?.boosted) {
-      toast("Already boosted", { description: target.name });
+      toast(t("st.alreadyBoosted"), { description: target.name });
       return;
     }
-    if (!(await changeCredits(-CREDIT_RULES.BOOST, "Boosted a listing"))) return;
+    if (!(await changeCredits(-CREDIT_RULES.BOOST, t("st.boostedListing")))) return;
     await supabase.from("listings").update({ boosted: true }).eq("id", listingId);
     await loadListings();
   };
@@ -526,15 +528,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       why: reason ?? null,
     });
     if (error) {
-      toast.error("Couldn't send that report");
+      toast.error(t("st.reportFail"));
       return;
     }
     const res = data as { ok: boolean; hidden?: boolean } | null;
     if (res?.hidden) {
-      toast.success("Reported — this listing has been hidden");
+      toast.success(t("st.reportedHidden"));
       await loadListings();
     } else {
-      toast("Thanks for the report", { description: "We'll take a look." });
+      toast(t("st.reportThanks"), { description: t("st.reportThanksD") });
     }
   };
 
@@ -542,27 +544,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setListings((l) => l.filter((x) => x.id !== listingId)); // optimistic
     const { error } = await supabase.from("listings").delete().eq("id", listingId);
     if (error) {
-      toast.error("Couldn't delete listing");
+      toast.error(t("st.deleteFail"));
       await loadListings();
       return;
     }
-    toast("Listing removed");
+    toast(t("st.listingRemoved"));
   };
 
   const setListingStatus = async (listingId: string, status: "active" | "swapped") => {
     setListings((l) => l.map((x) => (x.id === listingId ? { ...x, status } : x))); // optimistic
     const { error } = await supabase.from("listings").update({ status }).eq("id", listingId);
     if (error) {
-      toast.error("Couldn't update listing");
+      toast.error(t("st.updateListingFail"));
       await loadListings();
       return;
     }
-    toast(status === "swapped" ? "Marked as swapped" : "Marked as available");
+    toast(status === "swapped" ? t("st.markedSwapped") : t("st.markedAvailable"));
   };
 
   // Placeholder credit purchase — no real payment processing.
   const purchaseCredits = async (amount: number) => {
-    await changeCredits(amount, `Purchased ${amount} credits`);
+    await changeCredits(amount, t("st.purchased", { n: amount }));
   };
 
   // ── wishlist ("Looking for") ─────────────────────────────────────────────
@@ -570,7 +572,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const addWish: StoreValue["addWish"] = async (input) => {
     if (!input.title.trim()) {
-      toast.error("Add a title");
+      toast.error(t("toast.addTitle"));
       return false;
     }
     const { error } = await supabase.from("wishlist").insert({
@@ -582,10 +584,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       note: input.note?.trim() || null,
     });
     if (error) {
-      toast.error("Couldn't add to your wishlist");
+      toast.error(t("st.wishFail"));
       return false;
     }
-    toast.success("Added to your wishlist");
+    toast.success(t("st.wishAdded"));
     await loadWishlist();
     return true;
   };
@@ -599,7 +601,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const dailyCheckin: StoreValue["dailyCheckin"] = async () => {
     const { data, error } = await supabase.rpc("daily_checkin");
     if (error) {
-      toast.error("Couldn't check in");
+      toast.error(t("st.checkinFail"));
       return null;
     }
     await refreshProfile();
@@ -609,7 +611,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const redeemReferral: StoreValue["redeemReferral"] = async (code) => {
     const { data, error } = await supabase.rpc("redeem_referral", { code });
     if (error) {
-      toast.error("Couldn't redeem that code");
+      toast.error(t("st.redeemFail"));
       return null;
     }
     await refreshProfile();

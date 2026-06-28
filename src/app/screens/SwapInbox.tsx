@@ -205,7 +205,7 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
       {chat.offered && (
         <div className="bg-[#6B7A5C]/10 px-4 py-2 flex items-center gap-2 text-sm text-[var(--rw-ink)] shrink-0">
           <Gift className="w-4 h-4 text-[#6B7A5C]" strokeWidth={1.5} />
-          <span>Offering in return: <span className="font-medium">{chat.offered.name}</span></span>
+          <span>{t("inbox.offering")} <span className="font-medium">{chat.offered.name}</span></span>
         </div>
       )}
 
@@ -294,7 +294,7 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
           )
         ) : showMeetup ? (
           <div className="bg-[var(--rw-bg)] rounded-2xl p-3 mb-3 space-y-2">
-            <p className="text-sm font-medium text-[var(--rw-ink)]">Propose a meetup</p>
+            <p className="text-sm font-medium text-[var(--rw-ink)]">{t("inbox.proposeMeetup")}</p>
             <input
               type="datetime-local"
               value={meetupWhen}
@@ -305,12 +305,12 @@ function ChatView({ chat, myId, onBack }: { chat: Conversation; myId?: string; o
               type="text"
               value={meetupPlace}
               onChange={(e) => setMeetupPlace(e.target.value)}
-              placeholder="Place (e.g. Mercado de Ruzafa)"
+              placeholder={t("inbox.placePlaceholder")}
               className="w-full bg-[var(--rw-card)] rounded-xl px-3 py-2 text-sm text-[var(--rw-ink)] placeholder-[var(--rw-ink)]/40 focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
             />
             <div className="flex gap-2">
               <button onClick={submitMeetup} disabled={!meetupWhen} className="flex-1 bg-[#6B7A5C] text-white py-2 rounded-xl text-sm font-medium disabled:opacity-50">
-                Propose
+                {t("inbox.propose")}
               </button>
               <button onClick={() => setShowMeetup(false)} className="px-4 bg-[var(--rw-card)] text-[var(--rw-ink)] py-2 rounded-xl text-sm font-medium">
                 {t("common.cancel")}

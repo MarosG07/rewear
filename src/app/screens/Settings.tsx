@@ -69,7 +69,7 @@ export default function Settings() {
     setBusy(false);
     if (err) toast.error(err);
     else {
-      toast.success("Check your inbox to confirm the new email");
+      toast.success(t("set.emailSent"));
       setEmailMode(false);
       setNewEmail("");
     }
@@ -77,7 +77,7 @@ export default function Settings() {
 
   const doChangePassword = async () => {
     if (newPw.length < 6) {
-      toast.error("Password must be 6+ characters");
+      toast.error(t("set.pwMin"));
       return;
     }
     setBusy(true);
@@ -85,19 +85,19 @@ export default function Settings() {
     setBusy(false);
     if (err) toast.error(err);
     else {
-      toast.success("Password updated");
+      toast.success(t("set.pwUpdated"));
       setPwMode(false);
       setNewPw("");
     }
   };
 
   const doDelete = async () => {
-    if (!window.confirm("Delete your account and all your data? This can't be undone.")) return;
+    if (!window.confirm(t("set.deleteConfirm"))) return;
     setBusy(true);
     const err = await deleteAccount();
     setBusy(false);
     if (err) toast.error(err);
-    else toast("Account deleted");
+    else toast(t("set.accountDeleted"));
   };
 
   return (
@@ -239,7 +239,7 @@ export default function Settings() {
           <h2 className="font-heading text-lg text-[var(--rw-ink)] mb-3">{t("settings.about")}</h2>
           <div className="flex items-center gap-3 text-[var(--rw-ink)]/70 text-sm">
             <Info className="w-5 h-5 text-[#6B7A5C]" strokeWidth={1.5} />
-            <span>Rewear · v{APP_VERSION} · Circular fashion, locally</span>
+            <span>Rewear · v{APP_VERSION} · {t("common.tagline")}</span>
           </div>
         </section>
       </div>

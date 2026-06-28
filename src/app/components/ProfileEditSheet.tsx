@@ -4,8 +4,10 @@ import { toast } from "sonner";
 import { useAuth } from "../store/AuthContext";
 import { fileToDataUrl, uploadImage } from "../lib/upload";
 import { avatarFor } from "../lib/images";
+import { useI18n } from "../lib/i18n";
 
 export default function ProfileEditSheet({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
   const { profile, session, updateProfile } = useAuth();
   const [name, setName] = useState(profile?.name ?? "");
   const [location, setLocation] = useState(profile?.location ?? "");
@@ -15,20 +17,20 @@ export default function ProfileEditSheet({ onClose }: { onClose: () => void }) {
   const handleFile = async (file?: File) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Please choose an image");
+      toast.error(t("toast.chooseImage"));
       return;
     }
     try {
       setAvatarPreview(await fileToDataUrl(file, 400));
     } catch {
-      toast.error("Couldn't load that image");
+      toast.error(t("pe.loadImageFailed"));
     }
   };
 
   const save = async () => {
     if (busy) return;
     if (!name.trim()) {
-      toast.error("Add your name");
+      toast.error(t("toast.addName"));
       return;
     }
     setBusy(true);
@@ -36,7 +38,7 @@ export default function ProfileEditSheet({ onClose }: { onClose: () => void }) {
     if (avatarPreview && session) {
       const url = await uploadImage(session.user.id, avatarPreview);
       if (url) avatar_url = url;
-      else toast.error("Photo upload failed");
+      else toast.error(t("pe.photoFailed"));
     }
     const err = await updateProfile({
       name: name.trim(),
@@ -48,7 +50,7 @@ export default function ProfileEditSheet({ onClose }: { onClose: () => void }) {
       toast.error(err);
       return;
     }
-    toast.success("Profile updated");
+    toast.success(t("pe.updated"));
     onClose();
   };
 
@@ -62,7 +64,7 @@ export default function ProfileEditSheet({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-heading text-xl text-[var(--rw-ink)]">Edit profile</h2>
+          <h2 className="font-heading text-xl text-[var(--rw-ink)]">{t("pe.title")}</h2>
           <button onClick={onClose} className="p-1.5 hover:bg-[var(--rw-bg2)] rounded-full transition-colors">
             <X className="w-5 h-5 text-[var(--rw-ink)]" strokeWidth={1.5} />
           </button>
@@ -87,13 +89,13 @@ export default function ProfileEditSheet({ onClose }: { onClose: () => void }) {
           </label>
         </div>
 
-        <label className="block text-sm text-[var(--rw-ink)] font-medium mb-1.5">Name</label>
+        <label className="block text-sm text-[var(--rw-ink)] font-medium mb-1.5">{t("pe.name")}</label>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="w-full bg-[var(--rw-card)] rounded-2xl px-4 py-3 mb-3 text-[var(--rw-ink)] focus:outline-none focus:ring-2 focus:ring-[#6B7A5C]"
         />
-        <label className="block text-sm text-[var(--rw-ink)] font-medium mb-1.5">Location</label>
+        <label className="block text-sm text-[var(--rw-ink)] font-medium mb-1.5">{t("pe.location")}</label>
         <input
           value={location}
           onChange={(e) => setLocation(e.target.value)}
@@ -105,7 +107,7 @@ export default function ProfileEditSheet({ onClose }: { onClose: () => void }) {
           disabled={busy}
           className="w-full bg-[#C2794A] text-white py-3.5 rounded-2xl font-medium shadow-sm hover:bg-[#b36d3f] transition-all active:scale-[0.98] disabled:opacity-60"
         >
-          {busy ? "Saving…" : "Save changes"}
+          {busy ? t("list.saving") : t("list.saveChanges")}
         </button>
       </div>
     </div>
