@@ -328,6 +328,9 @@ const en: Dict = {
   "st.reportThanks": "Thanks for the report",
   "st.reportThanksD": "We'll take a look.",
   "st.newMessage": "New message from {name}",
+  "st.wishMatch": "New match for: {title}",
+  "st.wishMatchD": "Someone just listed something you're looking for.",
+  "st.viewItem": "View item",
 };
 
 const es: Dict = {
@@ -625,6 +628,9 @@ const es: Dict = {
   "st.reportThanks": "Gracias por el reporte",
   "st.reportThanksD": "Le echaremos un vistazo.",
   "st.newMessage": "Nuevo mensaje de {name}",
+  "st.wishMatch": "Nueva coincidencia para: {title}",
+  "st.wishMatchD": "Alguien acaba de publicar algo que buscas.",
+  "st.viewItem": "Ver prenda",
 };
 
 const hu: Dict = {
@@ -922,6 +928,9 @@ const hu: Dict = {
   "st.reportThanks": "Köszönjük a jelentést",
   "st.reportThanksD": "Megnézzük.",
   "st.newMessage": "Új üzenet tőle: {name}",
+  "st.wishMatch": "Új találat: {title}",
+  "st.wishMatchD": "Valaki épp feltöltött valamit, amit keresel.",
+  "st.viewItem": "Megnézem",
 };
 
 const dicts: Record<Lang, Dict> = { en, es, hu };

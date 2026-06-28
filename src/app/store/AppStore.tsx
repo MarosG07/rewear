@@ -100,6 +100,13 @@ interface StoreValue {
   redeemReferral: (code: string) => Promise<{ ok: boolean; msg: string } | null>;
 }
 
+function wishMatchesListing(wish: WishItem, listing: Listing): boolean {
+  if (wish.category && listing.category !== wish.category) return false;
+  const words = wish.title.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+  const haystack = `${listing.name} ${listing.description ?? ""}`.toLowerCase();
+  return words.some((w) => haystack.includes(w));
+}
+
 const StoreContext = createContext<StoreValue | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -116,9 +123,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     typeof Notification !== "undefined" && Notification.permission === "granted",
   );
 
-  // Always-fresh snapshot for the realtime notification handler.
+  // Always-fresh snapshots for realtime notification handlers.
   const conversationsRef = useRef<Conversation[]>([]);
   conversationsRef.current = conversations;
+  const myWishesRef = useRef<WishItem[]>([]);
 
   const credits = profile?.credits ?? 0;
 
@@ -226,6 +234,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       supabase.removeChannel(channel);
     };
   }, [userId, loadConversations]);
+
+  // Notify the user when a newly listed item matches one of their wishlist entries.
+  useEffect(() => {
+    if (!userId) return;
+    const channel = supabase
+      .channel("listings-notify")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "listings" },
+        (payload) => {
+          const listing = payload.new as Listing;
+          if (listing.owner_id === userId || listing.hidden) return;
+          loadListings();
+          const matches = myWishesRef.current.filter((w) => wishMatchesListing(w, listing));
+          for (const wish of matches) {
+            toast(t("st.wishMatch", { title: wish.title }), {
+              description: t("st.wishMatchD"),
+              action: { label: t("st.viewItem"), onClick: () => router.navigate(`/item/${listing.id}`) },
+            });
+          }
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, loadListings]);
 
   const enableNotifications = async () => {
     if (typeof Notification === "undefined") {
@@ -569,6 +604,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // ── wishlist ("Looking for") ─────────────────────────────────────────────
   const myWishes = useMemo(() => wishlist.filter((w) => w.user_id === userId), [wishlist, userId]);
+  myWishesRef.current = myWishes;
 
   const addWish: StoreValue["addWish"] = async (input) => {
     if (!input.title.trim()) {
