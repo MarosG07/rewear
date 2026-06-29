@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ChevronLeft, Camera, X } from "lucide-react";
 import { toast } from "sonner";
@@ -9,6 +9,9 @@ import { listingImage } from "../lib/images";
 import { NEIGHBORHOODS } from "../data/items";
 import { useI18n } from "../lib/i18n";
 import type { Listing } from "../lib/types";
+
+// Crop step (and its library) only loads when the user actually picks a photo.
+const ImageCropper = lazy(() => import("../components/ImageCropper"));
 
 const categories = ["Dress", "Shirt", "Pants", "Jacket", "Sweater", "Skirt", "Shoes", "Sneakers", "Accessories"];
 const sizes = ["XS", "S", "M", "L", "XL", "XXL", "One Size"];
@@ -54,6 +57,7 @@ function EditForm({ item }: { item: Listing }) {
   const [condition, setCondition] = useState(item.condition ?? "");
   const [newPhotos, setNewPhotos] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [cropping, setCropping] = useState<{ index: number; src: string } | null>(null);
 
   const existing = item.images?.length ? item.images : item.image_url ? [item.image_url] : [];
 
@@ -64,15 +68,20 @@ function EditForm({ item }: { item: Listing }) {
       return;
     }
     try {
-      const url = await fileToDataUrl(file);
-      setNewPhotos((p) => {
-        const next = [...p];
-        next[index] = url;
-        return next;
-      });
+      const src = await fileToDataUrl(file, 1400);
+      setCropping({ index, src });
     } catch {
-      toast.error("Couldn't load that image");
+      toast.error(t("pe.loadImageFailed"));
     }
+  };
+
+  const applyCrop = (dataUrl: string) => {
+    setNewPhotos((p) => {
+      const next = [...p];
+      if (cropping) next[cropping.index] = dataUrl;
+      return next;
+    });
+    setCropping(null);
   };
 
   const handleSubmit = async () => {
@@ -247,6 +256,12 @@ function EditForm({ item }: { item: Listing }) {
           </button>
         </div>
       </div>
+
+      {cropping && (
+        <Suspense fallback={<div className="absolute inset-0 z-50 bg-black" />}>
+          <ImageCropper src={cropping.src} onCancel={() => setCropping(null)} onDone={applyCrop} />
+        </Suspense>
+      )}
     </div>
   );
 }

@@ -26,6 +26,35 @@ export function fileToDataUrl(file: File, max = 900): Promise<string> {
   });
 }
 
+/**
+ * Crops a region (in source-image pixels, as produced by react-easy-crop's
+ * croppedAreaPixels) out of an image data URL and returns a JPEG data URL,
+ * downscaled so the long edge is at most `maxOut`.
+ */
+export function cropToDataUrl(
+  src: string,
+  area: { x: number; y: number; width: number; height: number },
+  maxOut = 1000,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onerror = () => reject(new Error("Could not read image"));
+    img.onload = () => {
+      const scale = Math.min(1, maxOut / Math.max(area.width, area.height));
+      const w = Math.max(1, Math.round(area.width * scale));
+      const h = Math.max(1, Math.round(area.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Canvas unavailable"));
+      ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.src = src;
+  });
+}
+
 export function dataUrlToBlob(dataUrl: string): Blob {
   const [head, b64] = dataUrl.split(",");
   const mime = head.match(/:(.*?);/)?.[1] || "image/jpeg";

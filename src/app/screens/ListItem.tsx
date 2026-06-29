@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useNavigate } from "react-router";
 import { ChevronLeft, Camera, X } from "lucide-react";
 import { toast } from "sonner";
@@ -7,6 +7,9 @@ import { useStore, CREDIT_RULES } from "../store/AppStore";
 import { fileToDataUrl } from "../lib/upload";
 import { NEIGHBORHOODS } from "../data/items";
 import { useI18n } from "../lib/i18n";
+
+// Crop step (and its library) only loads when the user actually picks a photo.
+const ImageCropper = lazy(() => import("../components/ImageCropper"));
 
 const categories = ["Dress", "Shirt", "Pants", "Jacket", "Sweater", "Skirt", "Shoes", "Sneakers", "Accessories"];
 const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
@@ -24,6 +27,8 @@ export default function ListItem() {
   const [selectedCondition, setSelectedCondition] = useState("");
   const [swapPreference, setSwapPreference] = useState("open");
   const [busy, setBusy] = useState(false);
+  // The photo slot being cropped + the picked image to crop.
+  const [cropping, setCropping] = useState<{ index: number; src: string } | null>(null);
 
   const handleFile = async (index: number, file?: File) => {
     if (!file) return;
@@ -32,15 +37,21 @@ export default function ListItem() {
       return;
     }
     try {
-      const url = await fileToDataUrl(file);
-      setPhotos((p) => {
-        const next = [...p];
-        next[index] = url;
-        return next;
-      });
+      // Read at a generous size so the crop stays sharp, then open the cropper.
+      const src = await fileToDataUrl(file, 1400);
+      setCropping({ index, src });
     } catch {
-      toast.error("Couldn't load that image", { description: "Try another photo." });
+      toast.error(t("pe.loadImageFailed"));
     }
+  };
+
+  const applyCrop = (dataUrl: string) => {
+    setPhotos((p) => {
+      const next = [...p];
+      if (cropping) next[cropping.index] = dataUrl;
+      return next;
+    });
+    setCropping(null);
   };
 
   const removePhoto = (index: number) =>
@@ -291,6 +302,12 @@ export default function ListItem() {
           </button>
         </div>
       </div>
+
+      {cropping && (
+        <Suspense fallback={<div className="absolute inset-0 z-50 bg-black" />}>
+          <ImageCropper src={cropping.src} onCancel={() => setCropping(null)} onDone={applyCrop} />
+        </Suspense>
+      )}
 
       <BottomNav />
     </div>
